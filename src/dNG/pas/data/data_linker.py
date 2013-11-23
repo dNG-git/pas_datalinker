@@ -39,8 +39,8 @@ NOTE_END //n"""
 from sqlalchemy.sql.functions import count as sql_count
 
 from dNG.pas.database.instance import Instance
-from dNG.pas.database.instances.data_linker import DataLinker as DataLinkerInstance
-from dNG.pas.database.instances.data_linker_meta import DataLinkerMeta as DataLinkerMetaInstance
+from dNG.pas.database.instances.data_linker import DataLinker as _DbDataLinker
+from dNG.pas.database.instances.data_linker_meta import DataLinkerMeta as _DbDataLinkerMeta
 from .binary import Binary
 from .traced_exception import TracedException
 
@@ -115,7 +115,7 @@ Sets values given as keyword arguments to this method.
 :since: v0.1.00
 		"""
 
-		if (self.local.db_instance == None): self.local.db_instance = DataLinkerInstance()
+		if (self.local.db_instance == None): self.local.db_instance = _DbDataLinker()
 
 		with self:
 		#
@@ -133,7 +133,7 @@ Sets values given as keyword arguments to this method.
 			#
 				if (self.local.db_instance.rel_meta == None):
 				#
-					self.local.db_instance.rel_meta = DataLinkerMetaInstance()
+					self.local.db_instance.rel_meta = _DbDataLinkerMeta()
 					self.local.db_instance.rel_meta.id = self.local.db_instance.id_object
 					db_meta_instance = self.local.db_instance.rel_meta
 				#
@@ -199,7 +199,7 @@ Deletes this entry from the database.
 					_return and
 					db_meta_instance != None and
 					db_meta_instance.objects < 1 and
-					self._database.query(sql_count(DataLinkerInstance.id)).filter(DataLinkerInstance.id_parent == db_meta_id).scalar() < 2
+					self._database.query(sql_count(_DbDataLinker.id)).filter(_DbDataLinker.id_parent == db_meta_id).scalar() < 2
 				): self._database.delete(db_meta_instance)
 
 				if (_return): self._database.commit()
@@ -290,7 +290,7 @@ Implementation of the reloading SQLalchemy database instance logic.
 			if (self.local.db_instance == None):
 			#
 				if (self.db_id == None): raise TracedException("Database instance is not reloadable.")
-				else: self.local.db_instance = self._database.query(DataLinkerInstance).filter(DataLinkerInstance.id == self.db_id).first()
+				else: self.local.db_instance = self._database.query(_DbDataLinker).filter(_DbDataLinker.id == self.db_id).first()
 			#
 			else: Instance._reload(self)
 		#
