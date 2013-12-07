@@ -81,30 +81,36 @@ Database ID used for reloading
 		#
 	#
 
-	def data_get(self, *args):
+	def _data_get(self, attribute):
 	#
 		"""
-Return the requested attributes.
+Return the data for the requested attribute.
 
-:return: (dict) Values for the requested attributes
+:param attribute: Requested attribute
+
+:return: (dict) Value for the requested attribute
 :since:  v0.1.00
 		"""
 
-		_return = { }
-
-		with self:
-		#
-			for attribute in args:
-			#
-				if (attribute == "title" and self.local.db_instance.title_alt != ""): _return['title'] = self.local.db_instance.title_alt
-				elif (attribute == "title_orig" and self.local.db_instance.rel_meta != None): _return['title_orig'] = self.local.db_instance.rel_meta.title
-				elif (hasattr(self.local.db_instance, attribute)): _return[attribute] = getattr(self.local.db_instance, attribute)
-				elif (self.local.db_instance.rel_meta != None and hasattr(self.local.db_instance.rel_meta, attribute)): _return[attribute] = getattr(self.local.db_instance.rel_meta, attribute)
-				else: _return[attribute] = None
-			#
-		#
+		if (attribute == "title" and self.local.db_instance.title_alt != ""): _return = self.local.db_instance.title_alt
+		elif (attribute == "title_orig" and self.local.db_instance.rel_meta != None): _return = self.local.db_instance.rel_meta.title
+		else: _return = Instance._data_get(self, attribute)
 
 		return _return
+	#
+
+	def _data_get_unknown(self, attribute):
+	#
+		"""
+Return the data for the requested attribute not defined for this instance.
+
+:param attribute: Requested attribute
+
+:return: (dict) Value for the requested attribute
+:since:  v0.1.00
+		"""
+
+		return (getattr(self.local.db_instance.rel_meta, attribute) if (self.local.db_instance.rel_meta != None and hasattr(self.local.db_instance.rel_meta, attribute)) else Instance._data_get_unknown(self, attribute))
 	#
 
 	def data_set(self, **kwargs):
@@ -129,7 +135,7 @@ Sets values given as keyword arguments to this method.
 			if ("position" in kwargs): self.local.db_instance.position = kwargs['position']
 			if ("title_alt" in kwargs): self.local.db_instance.title_alt = Binary.utf8(kwargs['title_alt'])
 
-			if ("subs" in kwargs or "objects" in kwargs or "sorting_date" in kwargs or "symbol" in kwargs or "title" in kwargs or "datasubs_type" in kwargs or "datasubs_hide" in kwargs or "datasubs_new" in kwargs or "views_count" in kwargs or "views" in kwargs):
+			if ("subs" in kwargs or "objects" in kwargs or "time_sortable" in kwargs or "symbol" in kwargs or "title" in kwargs or "datasubs_type" in kwargs or "datasubs_hide" in kwargs or "datasubs_new" in kwargs or "views_count" in kwargs or "views" in kwargs):
 			#
 				if (self.local.db_instance.rel_meta == None):
 				#
@@ -159,7 +165,7 @@ Sets values given as keyword arguments to this method.
 					else: db_meta_instance.objects = kwargs['objects']
 				#
 
-				if ("sorting_date" in kwargs): db_meta_instance.sorting_date = kwargs['sorting_date']
+				if ("time_sortable" in kwargs): db_meta_instance.time_sortable = kwargs['time_sortable']
 				if ("symbol" in kwargs): db_meta_instance.symbol = Binary.utf8(kwargs['symbol'])
 				if ("title" in kwargs): db_meta_instance.title = Binary.utf8(kwargs['title'])
 				if ("datasubs_type" in kwargs): db_meta_instance.datasubs_type = kwargs['datasubs_type']

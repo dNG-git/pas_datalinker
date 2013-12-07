@@ -71,9 +71,9 @@ datalinker_meta.subs
 	"""
 datalinker_meta.objects
 	"""
-	sorting_date = Column(BIGINT, server_default = "0", index = True, nullable = False)
+	time_sortable = Column(BIGINT, server_default = "0", index = True, nullable = False)
 	"""
-datalinker_meta.sorting_date
+datalinker_meta.time_sortable
 	"""
 	symbol = Column(VARCHAR(255), server_default = "", nullable = False)
 	"""
