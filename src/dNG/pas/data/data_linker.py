@@ -125,7 +125,7 @@ Sets values given as keyword arguments to this method.
 
 		with self:
 		#
-			if (self.id == None): self.id = self.local.db_instance.id
+			if (self.db_id == None): self.db_id = self.local.db_instance.id
 
 			if ("id_object" in kwargs): self.local.db_instance.id_object = kwargs['id_object']
 			if ("id_parent" in kwargs): self.local.db_instance.id_parent = kwargs['id_parent']
@@ -230,7 +230,12 @@ Load the parent instance.
 :since:  v0.1.00
 		"""
 
-		with self: _return = (None if (self.local.db_instance.rel_parent == None) else DataLinker(self.local.db_instance.rel_parent))
+		with self:
+		#
+			_return = (None if (self.local.db_instance.rel_parent == None) else DataLinker(self.local.db_instance.rel_parent))
+			if (_return == None and self.local.db_instance.rel_main != None): _return = DataLinker(self.local.db_instance.rel_main)
+		#
+
 		return _return
 	#
 

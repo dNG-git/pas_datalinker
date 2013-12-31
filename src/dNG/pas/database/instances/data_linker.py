@@ -113,6 +113,10 @@ sqlalchemy.org: Other options are passed to mapper() using the
 	"""
 Relation to DataLinker children (backref is set as "rel_parent")
 	"""
+	rel_main = relationship("DataLinker", primaryjoin = (foreign(id_main) == remote(id)), uselist = False)
+	"""
+Relation to DataLinker children (backref is set as "rel_parent")
+	"""
 	rel_meta = relationship(DataLinkerMeta, backref = "rel_linker", lazy = "joined", primaryjoin = (foreign(id_object) == remote(DataLinkerMeta.id)), uselist = False)
 	"""
 Relation to DataLinkerMeta (backref is set as "rel_linker")
