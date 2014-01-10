@@ -83,6 +83,10 @@ datalinker_meta.symbol
 	"""
 datalinker_meta.title
 	"""
+	hashtag = Column(VARCHAR(255), server_default = "", index = True, nullable = False)
+	"""
+datalinker_meta.hashtag
+	"""
 	datasubs_type = Column(SMALLINT, server_default = "0", nullable = False)
 	"""
 datalinker_meta.datasubs_type

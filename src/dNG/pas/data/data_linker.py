@@ -38,11 +38,13 @@ NOTE_END //n"""
 
 from sqlalchemy.sql.functions import count as sql_count
 
+from dNG.pas.database.connection import Connection
 from dNG.pas.database.instance import Instance
 from dNG.pas.database.instances.data_linker import DataLinker as _DbDataLinker
 from dNG.pas.database.instances.data_linker_meta import DataLinkerMeta as _DbDataLinkerMeta
+from dNG.pas.runtime.io_exception import IOException
+from dNG.pas.runtime.value_exception import ValueException
 from .binary import Binary
-from .traced_exception import TracedException
 
 class DataLinker(Instance):
 #
@@ -88,7 +90,7 @@ Return the data for the requested attribute.
 
 :param attribute: Requested attribute
 
-:return: (dict) Value for the requested attribute
+:return: (dict) Value for the requested attribute; None if undefined
 :since:  v0.1.00
 		"""
 
@@ -106,7 +108,7 @@ Return the data for the requested attribute not defined for this instance.
 
 :param attribute: Requested attribute
 
-:return: (dict) Value for the requested attribute
+:return: (dict) Value for the requested attribute; None if undefined
 :since:  v0.1.00
 		"""
 
@@ -165,9 +167,10 @@ Sets values given as keyword arguments to this method.
 					else: db_meta_instance.objects = kwargs['objects']
 				#
 
-				if ("time_sortable" in kwargs): db_meta_instance.time_sortable = kwargs['time_sortable']
+				if ("time_sortable" in kwargs): db_meta_instance.time_sortable = int(kwargs['time_sortable'])
 				if ("symbol" in kwargs): db_meta_instance.symbol = Binary.utf8(kwargs['symbol'])
 				if ("title" in kwargs): db_meta_instance.title = Binary.utf8(kwargs['title'])
+				if ("hashtag" in kwargs and "id_main" in kwargs and kwargs['hashtag'] != None and len(kwargs['hashtag']) > 0): db_meta_instance.hashtag = Binary.utf8(kwargs['hashtag'])
 				if ("datasubs_type" in kwargs): db_meta_instance.datasubs_type = kwargs['datasubs_type']
 				if ("datasubs_hide" in kwargs): db_meta_instance.datasubs_hide = kwargs['datasubs_hide']
 				if ("datasubs_new" in kwargs): db_meta_instance.datasubs_new = kwargs['datasubs_new']
@@ -219,6 +222,38 @@ Deletes this entry from the database.
 		#
 
 		return _return
+	#
+
+	get_id = Instance._wrap_getter("id")
+	"""
+Returns the ID of this instance.
+
+:return: (str) DataLinker ID; None if undefined
+:since:  v0.1.00
+	"""
+
+	def _insert(self):
+	#
+		"""
+Insert the instance into the database.
+
+:since: v0.1.00
+		"""
+
+		with self:
+		#
+			Instance._insert(self)
+			db_meta_instance = self.local.db_instance.rel_meta
+
+			if (db_meta_instance != None and db_meta_instance.hashtag != None):
+			#
+				if (
+					self._database.query(sql_count(_DbDataLinker.id)).join(_DbDataLinkerMeta).filter(
+						_DbDataLinker.id_main == self.local.db_instance.id_main, _DbDataLinkerMeta.hashtag == db_meta_instance.hashtag
+					).scalar() > 0
+				): raise ValueException("Hashtag can't be used twice in the same context")
+			#
+		#
 	#
 
 	def load_parent(self):
@@ -296,15 +331,31 @@ Implementation of the reloading SQLalchemy database instance logic.
 :since: v0.1.00
 		"""
 
-		with self.synchronized:
+		with self.lock:
 		#
 			if (self.local.db_instance == None):
 			#
-				if (self.db_id == None): raise TracedException("Database instance is not reloadable.")
+				if (self.db_id == None): raise IOException("Database instance is not reloadable.")
 				else: self.local.db_instance = self._database.query(_DbDataLinker).filter(_DbDataLinker.id == self.db_id).first()
 			#
 			else: Instance._reload(self)
 		#
+	#
+
+	@staticmethod
+	def load_hashtag(hashtag, id_main):
+	#
+		with Connection.get_instance() as database: db_instance = database.query(_DbDataLinker).join(_DbDataLinkerMeta).filter(_DbDataLinkerMeta.hashtag == hashtag, _DbDataLinker.id_main == id_main).first()
+		if (db_instance == None): raise ValueException("DataLinker hashtag '{0}' not found".format(hashtag))
+		return DataLinker(db_instance)
+	#
+
+	@staticmethod
+	def load_id(_id):
+	#
+		with Connection.get_instance() as database: db_instance = database.query(_DbDataLinker).filter(_DbDataLinker.id == _id).first()
+		if (db_instance == None): raise ValueException("DataLinker ID '{0}' is invalid".format(_id))
+		return DataLinker(db_instance)
 	#
 #
 
