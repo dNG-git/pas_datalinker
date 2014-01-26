@@ -63,13 +63,13 @@ SQLAlchemy table name
 	"""
 datalinker_meta.id
 	"""
-	subs = Column(BIGINT, server_default = "0", nullable = False)
-	"""
-datalinker_meta.subs
-	"""
 	objects = Column(BIGINT, server_default = "0", nullable = False)
 	"""
 datalinker_meta.objects
+	"""
+	objects_sub_type = Column(SMALLINT, server_default = "0", nullable = False)
+	"""
+datalinker_meta.objects_sub_type
 	"""
 	time_sortable = Column(BIGINT, server_default = "0", index = True, nullable = False)
 	"""
@@ -83,21 +83,9 @@ datalinker_meta.symbol
 	"""
 datalinker_meta.title
 	"""
-	hashtag = Column(VARCHAR(255), server_default = "", index = True, nullable = False)
+	tag = Column(VARCHAR(255), server_default = "", index = True, nullable = False)
 	"""
-datalinker_meta.hashtag
-	"""
-	datasubs_type = Column(SMALLINT, server_default = "0", nullable = False)
-	"""
-datalinker_meta.datasubs_type
-	"""
-	datasubs_hide = Column(SMALLINT, server_default = "0", nullable = False)
-	"""
-datalinker_meta.datasubs_hide
-	"""
-	datasubs_new = Column(SMALLINT, server_default = "0", nullable = False)
-	"""
-datalinker_meta.datasubs_new
+datalinker_meta.tag
 	"""
 	views_count = Column(BOOLEAN, server_default = "0", nullable = False)
 	"""
@@ -118,7 +106,6 @@ Constructor __init__(DataLinkerMeta)
 
 		Abstract.__init__(self, *args, **kwargs)
 
-		if (self.subs == None): self.subs = 0
 		if (self.objects == None): self.objects = 0
 	#
 #

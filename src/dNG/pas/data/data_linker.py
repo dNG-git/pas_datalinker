@@ -137,7 +137,7 @@ Sets values given as keyword arguments to this method.
 			if ("position" in kwargs): self.local.db_instance.position = kwargs['position']
 			if ("title_alt" in kwargs): self.local.db_instance.title_alt = Binary.utf8(kwargs['title_alt'])
 
-			if ("subs" in kwargs or "objects" in kwargs or "time_sortable" in kwargs or "symbol" in kwargs or "title" in kwargs or "datasubs_type" in kwargs or "datasubs_hide" in kwargs or "datasubs_new" in kwargs or "views_count" in kwargs or "views" in kwargs):
+			if ("objects" in kwargs or "objects_sub_type" in kwargs or "time_sortable" in kwargs or "symbol" in kwargs or "title" in kwargs or "tag" in kwargs or "views_count" in kwargs or "views" in kwargs):
 			#
 				if (self.local.db_instance.rel_meta == None):
 				#
@@ -146,16 +146,6 @@ Sets values given as keyword arguments to this method.
 					db_meta_instance = self.local.db_instance.rel_meta
 				#
 				else: db_meta_instance = self.local.db_instance.rel_meta
-
-				if ("subs" in kwargs):
-				#
-					if (kwargs['subs'] == "++"): db_meta_instance.subs = db_meta_instance.subs + 1
-					elif (kwargs['subs'] == "--"):
-					#
-						if (db_meta_instance.subs > 0): db_meta_instance.subs = db_meta_instance.subs - 1
-					#
-					else: db_meta_instance.subs = kwargs['subs']
-				#
 
 				if ("objects" in kwargs):
 				#
@@ -167,13 +157,18 @@ Sets values given as keyword arguments to this method.
 					else: db_meta_instance.objects = kwargs['objects']
 				#
 
+				if ("objects_sub_type" in kwargs): db_meta_instance.objects_sub_type = kwargs['objects_sub_type']
 				if ("time_sortable" in kwargs): db_meta_instance.time_sortable = int(kwargs['time_sortable'])
 				if ("symbol" in kwargs): db_meta_instance.symbol = Binary.utf8(kwargs['symbol'])
 				if ("title" in kwargs): db_meta_instance.title = Binary.utf8(kwargs['title'])
-				if ("hashtag" in kwargs and "id_main" in kwargs and kwargs['hashtag'] != None and len(kwargs['hashtag']) > 0): db_meta_instance.hashtag = Binary.utf8(kwargs['hashtag'])
-				if ("datasubs_type" in kwargs): db_meta_instance.datasubs_type = kwargs['datasubs_type']
-				if ("datasubs_hide" in kwargs): db_meta_instance.datasubs_hide = kwargs['datasubs_hide']
-				if ("datasubs_new" in kwargs): db_meta_instance.datasubs_new = kwargs['datasubs_new']
+
+				if ("tag" in kwargs and kwargs['tag'] != None and len(kwargs['tag']) > 0):
+				#
+					tag = Binary.utf8(kwargs['tag'])
+					if (db_meta_instance.tag != None and db_meta_instance.tag != tag): self._validate_unique_tag(tag)
+					db_meta_instance.tag = tag
+				#
+
 				if ("views_count" in kwargs): db_meta_instance.views_count = kwargs['views_count']
 				if ("views" in kwargs): db_meta_instance.views = kwargs['views']
 			#
@@ -232,6 +227,41 @@ Returns the ID of this instance.
 :since:  v0.1.00
 	"""
 
+	get_linkertype = Instance._wrap_getter("linkertype")
+	"""
+Returns the type of this instance.
+
+:return: (str) DataLinker ID; None if undefined
+:since:  v0.1.00
+	"""
+
+	def get_objects(self, offset = 0, limit = -1):
+	#
+		"""
+Returns the children objects of this instance.
+
+:return: (list) DataLinker children instances
+:since:  v0.1.00
+		"""
+
+		with self:
+		#
+			db_query = self.local.db_instance.rel_children
+			if (offset > 0): db_query = db_query.offset(offset)
+			if (limit > 0): db_query = db_query.limit(limit)
+
+			return DataLinker.buffered_iterator(_DbDataLinker, self._database.execute(db_query), DataLinker)
+		#
+	#
+
+	get_objects_count = Instance._wrap_getter("objects")
+	"""
+Returns the number of objects of this instance.
+
+:return: (str) DataLinker ID; None if undefined
+:since:  v0.1.00
+	"""
+
 	def _insert(self):
 	#
 		"""
@@ -245,15 +275,32 @@ Insert the instance into the database.
 			Instance._insert(self)
 			db_meta_instance = self.local.db_instance.rel_meta
 
-			if (db_meta_instance != None and db_meta_instance.hashtag != None):
+			if (db_meta_instance != None and db_meta_instance.tag != None):
 			#
-				if (
-					self._database.query(sql_count(_DbDataLinker.id)).join(_DbDataLinkerMeta).filter(
-						_DbDataLinker.id_main == self.local.db_instance.id_main, _DbDataLinkerMeta.hashtag == db_meta_instance.hashtag
-					).scalar() > 0
-				): raise ValueException("Hashtag can't be used twice in the same context")
+				with self._database.no_autoflush: self._validate_unique_tag(tag)
 			#
 		#
+	#
+
+	def is_reloadable(self):
+	#
+		"""
+Returns true if the instance can be reloaded automatically in another
+thread.
+
+:return: (bool) True if reloadable
+:since:  v0.1.00
+		"""
+
+		_return = True
+
+		if (self.db_id == None):
+		#
+			# Value could be set in another thread so check again
+			with self.lock: _return = (self.db_id != None)
+		#
+
+		return _return
 	#
 
 	def load_parent(self):
@@ -342,11 +389,28 @@ Implementation of the reloading SQLalchemy database instance logic.
 		#
 	#
 
-	@staticmethod
-	def load_hashtag(hashtag, id_main):
+	def _validate_unique_tag(self, tag):
 	#
-		with Connection.get_instance() as database: db_instance = database.query(_DbDataLinker).join(_DbDataLinkerMeta).filter(_DbDataLinkerMeta.hashtag == hashtag, _DbDataLinker.id_main == id_main).first()
-		if (db_instance == None): raise ValueException("DataLinker hashtag '{0}' not found".format(hashtag))
+		"""
+Validates the given tag to be unique in the current main context.
+
+:param tag: Tag to be checked
+
+:since: v0.1.00
+		"""
+
+		if (
+			self._database.query(sql_count(_DbDataLinker.id)).join(_DbDataLinkerMeta, (_DbDataLinker.id_object == _DbDataLinkerMeta.id)).filter(
+				_DbDataLinker.id_main == self.local.db_instance.id_main, _DbDataLinkerMeta.tag == tag
+			).scalar() > 0
+		): raise ValueException("Tag can't be used twice in the same context")
+	#
+
+	@staticmethod
+	def load_tag(tag, id_main):
+	#
+		with Connection.get_instance() as database: db_instance = database.query(_DbDataLinker).join(_DbDataLinkerMeta).filter(_DbDataLinkerMeta.tag == tag, _DbDataLinker.id_main == id_main).first()
+		if (db_instance == None): raise ValueException("DataLinker tag '{0}' not found".format(tag))
 		return DataLinker(db_instance)
 	#
 
