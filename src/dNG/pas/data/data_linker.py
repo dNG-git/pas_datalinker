@@ -60,6 +60,11 @@ This class provides an hierarchical abstraction layer called DataLinker.
              GNU General Public License 2
 	"""
 
+	OBJECTS_SUB_TYPE_ADDITIONAL_CONTENT = 1
+	"""
+Sub objects are defined to represent "additional content"
+	"""
+
 	def __init__(self, db_instance = None):
 	#
 		"""
@@ -165,7 +170,12 @@ Sets values given as keyword arguments to this method.
 				if ("tag" in kwargs and kwargs['tag'] != None and len(kwargs['tag']) > 0):
 				#
 					tag = Binary.utf8(kwargs['tag'])
-					if (db_meta_instance.tag != None and db_meta_instance.tag != tag): self._validate_unique_tag(tag)
+
+					if (tag != None and db_meta_instance.tag != tag):
+					#
+						with self._database.no_autoflush: self._validate_unique_tag(tag)
+					#
+
 					db_meta_instance.tag = tag
 				#
 
@@ -261,26 +271,6 @@ Returns the number of objects of this instance.
 :return: (str) DataLinker ID; None if undefined
 :since:  v0.1.00
 	"""
-
-	def _insert(self):
-	#
-		"""
-Insert the instance into the database.
-
-:since: v0.1.00
-		"""
-
-		with self:
-		#
-			Instance._insert(self)
-			db_meta_instance = self.local.db_instance.rel_meta
-
-			if (db_meta_instance != None and db_meta_instance.tag != None):
-			#
-				with self._database.no_autoflush: self._validate_unique_tag(tag)
-			#
-		#
-	#
 
 	def is_reloadable(self):
 	#
