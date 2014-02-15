@@ -60,6 +60,8 @@ This class provides an hierarchical abstraction layer called DataLinker.
              GNU General Public License 2
 	"""
 
+	# pylint: disable=maybe-no-member
+
 	OBJECTS_SUB_TYPE_ADDITIONAL_CONTENT = 1
 	"""
 Sub objects are defined to represent "additional content"
@@ -321,6 +323,8 @@ Add the given child.
 :since: v0.1.00
 		"""
 
+		# pylint: disable=protected-access
+
 		if (isinstance(child, DataLinker)):
 		#
 			with self:
@@ -347,6 +351,8 @@ Remove the given child.
 
 :since: v0.1.00
 		"""
+
+		# pylint: disable=protected-access
 
 		if (isinstance(child, DataLinker)):
 		#
@@ -396,19 +402,54 @@ Validates the given tag to be unique in the current main context.
 		): raise ValueException("Tag can't be used twice in the same context")
 	#
 
-	@staticmethod
-	def load_tag(tag, id_main):
-	#
-		with Connection.get_instance() as database: db_instance = database.query(_DbDataLinker).join(_DbDataLinkerMeta).filter(_DbDataLinkerMeta.tag == tag, _DbDataLinker.id_main == id_main).first()
-		if (db_instance == None): raise ValueException("DataLinker tag '{0}' not found".format(tag))
-		return DataLinker(db_instance)
-	#
+	load = Instance._wrap_loader(_DbDataLinker)
+	"""
+Load DataLinker instance by the given criteria (AND condition is used).
+
+:return: (object) DataLinker instance on success
+:since:  v0.1.00
+	"""
 
 	@staticmethod
 	def load_id(_id):
 	#
+		"""
+Load DataLinker instance by ID.
+
+:param _id: DataLinker ID
+
+:return: (object) DataLinker instance on success
+:since:  v0.1.00
+		"""
+
 		with Connection.get_instance() as database: db_instance = database.query(_DbDataLinker).filter(_DbDataLinker.id == _id).first()
 		if (db_instance == None): raise ValueException("DataLinker ID '{0}' is invalid".format(_id))
+
+		return DataLinker(db_instance)
+	#
+
+	@staticmethod
+	def load_tag(tag, id_main):
+	#
+		"""
+Load DataLinker instance by tag.
+
+:param tag: DataLinker tag
+:param id_main: DataLinker main ID where the unique tag is looked up
+
+:return: (object) DataLinker instance on success
+:since:  v0.1.00
+		"""
+
+		with Connection.get_instance() as database:
+		#
+			db_instance = database.query(_DbDataLinker).join(
+				_DbDataLinkerMeta, (_DbDataLinker.id_object == _DbDataLinkerMeta.id)
+			).filter(_DbDataLinkerMeta.tag == tag, _DbDataLinker.id_main == id_main).first()
+		#
+
+		if (db_instance == None): raise ValueException("DataLinker tag '{0}' not found".format(tag))
+
 		return DataLinker(db_instance)
 	#
 #

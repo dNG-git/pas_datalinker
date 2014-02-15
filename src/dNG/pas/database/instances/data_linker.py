@@ -57,6 +57,8 @@ SQLAlchemy database instance for DataLinker.
              GNU General Public License 2
 	"""
 
+	# pylint: disable=invalid-name
+
 	__tablename__ = "{0}_datalinker".format(Abstract.get_table_prefix())
 	"""
 SQLAlchemy table name

@@ -54,6 +54,8 @@ SQLAlchemy database instance for the metadata of a DataLinker entry.
              GNU General Public License 2
 	"""
 
+	# pylint: disable=invalid-name
+
 	__tablename__ = "{0}_datalinker_meta".format(Abstract.get_table_prefix())
 	"""
 SQLAlchemy table name
