@@ -259,6 +259,8 @@ Returns the children objects of this instance.
 		with self:
 		#
 			db_query = self.local.db_instance.rel_children
+
+			db_query = self._db_apply_sort_definition(db_query)
 			if (offset > 0): db_query = db_query.offset(offset)
 			if (limit > 0): db_query = db_query.limit(limit)
 
@@ -369,7 +371,7 @@ Remove the given child.
 	def _reload(self):
 	#
 		"""
-Implementation of the reloading SQLalchemy database instance logic.
+Implementation of the reloading SQLAlchemy database instance logic.
 
 :since: v0.1.00
 		"""
