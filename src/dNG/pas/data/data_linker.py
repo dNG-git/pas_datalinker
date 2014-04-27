@@ -90,24 +90,6 @@ Database ID used for reloading
 		#
 	#
 
-	def _data_get(self, attribute):
-	#
-		"""
-Return the data for the requested attribute.
-
-:param attribute: Requested attribute
-
-:return: (dict) Value for the requested attribute; None if undefined
-:since:  v0.1.00
-		"""
-
-		if (attribute == "title" and self.local.db_instance.title_alt != ""): _return = self.local.db_instance.title_alt
-		elif (attribute == "title_orig" and self.local.db_instance.rel_meta != None): _return = self.local.db_instance.rel_meta.title
-		else: _return = Instance._data_get(self, attribute)
-
-		return _return
-	#
-
 	def _data_get_unknown(self, attribute):
 	#
 		"""
@@ -136,20 +118,17 @@ Sets values given as keyword arguments to this method.
 		#
 			if (self.db_id == None): self.db_id = self.local.db_instance.id
 
-			if ("id_object" in kwargs): self.local.db_instance.id_object = kwargs['id_object']
 			if ("id_parent" in kwargs): self.local.db_instance.id_parent = kwargs['id_parent']
 			if ("id_main" in kwargs): self.local.db_instance.id_main = Binary.utf8(kwargs['id_main'])
 			if ("id_site" in kwargs): self.local.db_instance.id_site = Binary.utf8(kwargs['id_site'])
-			if ("type" in kwargs): self.local.db_instance.type = kwargs['type']
 			if ("position" in kwargs): self.local.db_instance.position = kwargs['position']
-			if ("title_alt" in kwargs): self.local.db_instance.title_alt = Binary.utf8(kwargs['title_alt'])
 
 			if ("objects" in kwargs or "objects_sub_type" in kwargs or "time_sortable" in kwargs or "symbol" in kwargs or "title" in kwargs or "tag" in kwargs or "views_count" in kwargs or "views" in kwargs):
 			#
 				if (self.local.db_instance.rel_meta == None):
 				#
 					self.local.db_instance.rel_meta = _DbDataLinkerMeta()
-					self.local.db_instance.rel_meta.id = self.local.db_instance.id_object
+					self.local.db_instance.rel_meta.id = self.local.db_instance.id
 					db_meta_instance = self.local.db_instance.rel_meta
 				#
 				else: db_meta_instance = self.local.db_instance.rel_meta
@@ -204,7 +183,6 @@ Deletes this entry from the database.
 
 			try:
 			#
-				db_meta_id = self.local.db_instance.id_object
 				db_meta_instance = self.local.db_instance.rel_meta
 
 				if (self.local.db_instance.rel_parent != None): DataLinker(self.local.db_instance.rel_parent).object_remove(self)
@@ -214,8 +192,7 @@ Deletes this entry from the database.
 				if (
 					_return and
 					db_meta_instance != None and
-					db_meta_instance.objects < 1 and
-					self._database.query(sql_count(_DbDataLinker.id)).filter(_DbDataLinker.id_parent == db_meta_id).scalar() < 2
+					db_meta_instance.objects < 1
 				): self._database.delete(db_meta_instance)
 
 				if (_return): self._database.commit()
@@ -239,9 +216,9 @@ Returns the ID of this instance.
 :since:  v0.1.00
 	"""
 
-	get_linkertype = Instance._wrap_getter("linkertype")
+	get_identity = Instance._wrap_getter("identity")
 	"""
-Returns the type of this instance.
+Returns the identity of this DataLinker instance.
 
 :return: (str) DataLinker ID; None if undefined
 :since:  v0.1.00
@@ -398,7 +375,7 @@ Validates the given tag to be unique in the current main context.
 		"""
 
 		if (
-			self._database.query(sql_count(_DbDataLinker.id)).join(_DbDataLinkerMeta, (_DbDataLinker.id_object == _DbDataLinkerMeta.id)).filter(
+			self._database.query(sql_count(_DbDataLinker.id)).join(_DbDataLinkerMeta, (_DbDataLinker.id == _DbDataLinkerMeta.id)).filter(
 				_DbDataLinker.id_main == self.local.db_instance.id_main, _DbDataLinkerMeta.tag == tag
 			).scalar() > 0
 		): raise ValueException("Tag can't be used twice in the same context")
@@ -446,7 +423,7 @@ Load DataLinker instance by tag.
 		with Connection.get_instance() as database:
 		#
 			db_instance = database.query(_DbDataLinker).join(
-				_DbDataLinkerMeta, (_DbDataLinker.id_object == _DbDataLinkerMeta.id)
+				_DbDataLinkerMeta, (_DbDataLinker.id == _DbDataLinkerMeta.id)
 			).filter(_DbDataLinkerMeta.tag == tag, _DbDataLinker.id_main == id_main).first()
 		#
 

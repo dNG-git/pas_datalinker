@@ -36,7 +36,7 @@ http://www.direct-netware.de/redirect.py?licenses;gpl
 ----------------------------------------------------------------------------
 NOTE_END //n"""
 
-from sqlalchemy import BIGINT, Column, ForeignKey, INT, VARCHAR
+from sqlalchemy import BIGINT, Column, ForeignKey, VARCHAR
 from sqlalchemy.orm import backref, foreign, relationship, remote
 from uuid import uuid4 as uuid
 
@@ -72,10 +72,6 @@ Encapsulating SQLAlchemy database instance class name
 	"""
 datalinker.id
 	"""
-	id_object = Column(VARCHAR(32), index = True, nullable = False)
-	"""
-datalinker.id_object
-	"""
 	id_parent = Column(VARCHAR(32), ForeignKey(id), index = True)
 	"""
 datalinker.id_parent
@@ -88,27 +84,19 @@ datalinker.id_main
 	"""
 datalinker.id_site
 	"""
-	linkertype = Column(VARCHAR(100), index = True, nullable = False)
+	identity = Column(VARCHAR(100), index = True, nullable = False)
 	"""
-datalinker.linkertype
-	"""
-	type = Column(INT, server_default = "1", nullable = False)
-	"""
-datalinker.type
+datalinker.identity
 	"""
 	position = Column(BIGINT, server_default = "0", nullable = False)
 	"""
 datalinker.position
 	"""
-	title_alt = Column(VARCHAR(255), server_default = "", index = True, nullable = False)
-	"""
-datalinker.title_alt
-	"""
 
-	__mapper_args__ = { "polymorphic_identity": "DataLinker", "polymorphic_on": linkertype }
+	__mapper_args__ = { "polymorphic_identity": "DataLinker", "polymorphic_on": identity }
 	"""
 sqlalchemy.org: Other options are passed to mapper() using the
-                __mapper_args__ class variable.
+__mapper_args__ class variable.
 	"""
 
 	rel_children = relationship("DataLinker", backref = backref("rel_parent", remote_side = [ id ]), lazy = "dynamic")
@@ -117,9 +105,9 @@ Relation to DataLinker children (backref is set as "rel_parent")
 	"""
 	rel_main = relationship("DataLinker", primaryjoin = (foreign(id_main) == remote(id)), uselist = False)
 	"""
-Relation to DataLinker children (backref is set as "rel_parent")
+Relation to DataLinker main entry
 	"""
-	rel_meta = relationship(DataLinkerMeta, backref = "rel_linker", lazy = "joined", primaryjoin = (foreign(id_object) == remote(DataLinkerMeta.id)), uselist = False)
+	rel_meta = relationship(DataLinkerMeta, backref = "rel_linker", lazy = "joined", primaryjoin = (foreign(id) == remote(DataLinkerMeta.id)), uselist = False)
 	"""
 Relation to DataLinkerMeta (backref is set as "rel_linker")
 	"""
@@ -135,7 +123,6 @@ Constructor __init__(DataLinker)
 		Abstract.__init__(self, *args, **kwargs)
 
 		if (self.id == None): self.id = uuid().hex
-		if (self.id_object == None): self.id_object = self.id
 	#
 #
 
