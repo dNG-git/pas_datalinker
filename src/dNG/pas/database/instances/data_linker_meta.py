@@ -38,6 +38,7 @@ NOTE_END //n"""
 
 from sqlalchemy import BOOLEAN, BIGINT, Column, SMALLINT, VARCHAR
 
+from dNG.pas.database.types.date_time import DateTime
 from .abstract import Abstract
 
 class DataLinkerMeta(Abstract):
@@ -65,15 +66,15 @@ SQLAlchemy table name
 	"""
 datalinker_meta.id
 	"""
-	objects = Column(BIGINT, server_default = "0", nullable = False)
+	sub_entries = Column(BIGINT, server_default = "0", nullable = False)
 	"""
-datalinker_meta.objects
+datalinker_meta.sub_entries
 	"""
-	objects_sub_type = Column(SMALLINT, server_default = "0", nullable = False)
+	sub_entries_type = Column(SMALLINT, server_default = "0", nullable = False)
 	"""
-datalinker_meta.objects_sub_type
+datalinker_meta.sub_entries_type
 	"""
-	time_sortable = Column(BIGINT, server_default = "0", index = True, nullable = False)
+	time_sortable = Column(DateTime, default = 0, index = True, nullable = False)
 	"""
 datalinker_meta.time_sortable
 	"""
@@ -108,7 +109,7 @@ Constructor __init__(DataLinkerMeta)
 
 		Abstract.__init__(self, *args, **kwargs)
 
-		if (self.objects == None): self.objects = 0
+		if (self.sub_entries == None): self.sub_entries = 0
 	#
 #
 

@@ -40,6 +40,7 @@ from sqlalchemy.sql.functions import count as sql_count
 
 from dNG.pas.database.connection import Connection
 from dNG.pas.database.instance import Instance
+from dNG.pas.database.nothing_matched_exception import NothingMatchedException
 from dNG.pas.database.instances.data_linker import DataLinker as _DbDataLinker
 from dNG.pas.database.instances.data_linker_meta import DataLinkerMeta as _DbDataLinkerMeta
 from dNG.pas.runtime.io_exception import IOException
@@ -62,7 +63,7 @@ This class provides an hierarchical abstraction layer called DataLinker.
 
 	# pylint: disable=maybe-no-member
 
-	OBJECTS_SUB_TYPE_ADDITIONAL_CONTENT = 1
+	SUB_ENTRIES_TYPE_ADDITIONAL_CONTENT = 1
 	"""
 Sub objects are defined to represent "additional content"
 	"""
@@ -90,78 +91,31 @@ Database ID used for reloading
 		#
 	#
 
-	def _data_get_unknown(self, attribute):
+	def add_entry(self, child):
 	#
 		"""
-Return the data for the requested attribute not defined for this instance.
+Add the given child.
 
-:param attribute: Requested attribute
-
-:return: (dict) Value for the requested attribute; None if undefined
-:since:  v0.1.00
-		"""
-
-		return (getattr(self.local.db_instance.rel_meta, attribute) if (self.local.db_instance.rel_meta != None and hasattr(self.local.db_instance.rel_meta, attribute)) else Instance._data_get_unknown(self, attribute))
-	#
-
-	def data_set(self, **kwargs):
-	#
-		"""
-Sets values given as keyword arguments to this method.
+:param child: DataLinker instance
 
 :since: v0.1.00
 		"""
 
-		if (self.local.db_instance == None): self.local.db_instance = _DbDataLinker()
+		# pylint: disable=protected-access
 
-		with self:
+		if (isinstance(child, DataLinker)):
 		#
-			if (self.db_id == None): self.db_id = self.local.db_instance.id
-
-			if ("id_parent" in kwargs): self.local.db_instance.id_parent = kwargs['id_parent']
-			if ("id_main" in kwargs): self.local.db_instance.id_main = Binary.utf8(kwargs['id_main'])
-			if ("id_site" in kwargs): self.local.db_instance.id_site = Binary.utf8(kwargs['id_site'])
-			if ("position" in kwargs): self.local.db_instance.position = kwargs['position']
-
-			if ("objects" in kwargs or "objects_sub_type" in kwargs or "time_sortable" in kwargs or "symbol" in kwargs or "title" in kwargs or "tag" in kwargs or "views_count" in kwargs or "views" in kwargs):
+			with self:
 			#
-				if (self.local.db_instance.rel_meta == None):
-				#
-					self.local.db_instance.rel_meta = _DbDataLinkerMeta()
-					self.local.db_instance.rel_meta.id = self.local.db_instance.id
-					db_meta_instance = self.local.db_instance.rel_meta
-				#
-				else: db_meta_instance = self.local.db_instance.rel_meta
+				child_data = child.get_data_attributes("id")
 
-				if ("objects" in kwargs):
+				if (child_data['id'] != self.local.db_instance.id):
 				#
-					if (kwargs['objects'] == "++"): db_meta_instance.objects = db_meta_instance.objects + 1
-					elif (kwargs['objects'] == "--"):
-					#
-						if (db_meta_instance.objects > 0): db_meta_instance.objects = db_meta_instance.objects - 1
-					#
-					else: db_meta_instance.objects = kwargs['objects']
+					self.local.db_instance.rel_children.append(child._get_db_instance())
+					child.set_data_attributes(id_main = self.local.db_instance.id_main)
+
+					self.set_data_attributes(sub_entries = "++")
 				#
-
-				if ("objects_sub_type" in kwargs): db_meta_instance.objects_sub_type = kwargs['objects_sub_type']
-				if ("time_sortable" in kwargs): db_meta_instance.time_sortable = int(kwargs['time_sortable'])
-				if ("symbol" in kwargs): db_meta_instance.symbol = Binary.utf8(kwargs['symbol'])
-				if ("title" in kwargs): db_meta_instance.title = Binary.utf8(kwargs['title'])
-
-				if ("tag" in kwargs and kwargs['tag'] != None and len(kwargs['tag']) > 0):
-				#
-					tag = Binary.utf8(kwargs['tag'])
-
-					if (tag != None and db_meta_instance.tag != tag):
-					#
-						with self._database.no_autoflush: self._validate_unique_tag(tag)
-					#
-
-					db_meta_instance.tag = tag
-				#
-
-				if ("views_count" in kwargs): db_meta_instance.views_count = kwargs['views_count']
-				if ("views" in kwargs): db_meta_instance.views = kwargs['views']
 			#
 		#
 	#
@@ -185,15 +139,14 @@ Deletes this entry from the database.
 			#
 				db_meta_instance = self.local.db_instance.rel_meta
 
-				if (self.local.db_instance.rel_parent != None): DataLinker(self.local.db_instance.rel_parent).object_remove(self)
+				if (self.local.db_instance.rel_parent != None): DataLinker(self.local.db_instance.rel_parent).remove_entry(self)
 
 				_return = Instance.delete(self)
 
-				if (
-					_return and
-					db_meta_instance != None and
-					db_meta_instance.objects < 1
-				): self._database.delete(db_meta_instance)
+				if (_return
+				    and db_meta_instance != None
+				    and db_meta_instance.sub_entries < 1
+				   ): self._database.delete(db_meta_instance)
 
 				if (_return): self._database.commit()
 				else: self._database.rollback()
@@ -224,7 +177,7 @@ Returns the identity of this DataLinker instance.
 :since:  v0.1.00
 	"""
 
-	def get_objects(self, offset = 0, limit = -1):
+	def get_sub_entries(self, offset = 0, limit = -1):
 	#
 		"""
 Returns the children objects of this instance.
@@ -245,13 +198,27 @@ Returns the children objects of this instance.
 		#
 	#
 
-	get_objects_count = Instance._wrap_getter("objects")
+	get_sub_entries_count = Instance._wrap_getter("sub_entries")
 	"""
 Returns the number of objects of this instance.
 
 :return: (str) DataLinker ID; None if undefined
 :since:  v0.1.00
 	"""
+
+	def _get_unknown_data_attribute(self, attribute):
+	#
+		"""
+Return the data for the requested attribute not defined for this instance.
+
+:param attribute: Requested attribute
+
+:return: (dict) Value for the requested attribute; None if undefined
+:since:  v0.1.00
+		"""
+
+		return (getattr(self.local.db_instance.rel_meta, attribute) if (self.local.db_instance.rel_meta != None and hasattr(self.local.db_instance.rel_meta, attribute)) else Instance._get_unknown_data_attribute(self, attribute))
+	#
 
 	def is_reloadable(self):
 	#
@@ -263,15 +230,7 @@ thread.
 :since:  v0.1.00
 		"""
 
-		_return = True
-
-		if (self.db_id == None):
-		#
-			# Value could be set in another thread so check again
-			with self.lock: _return = (self.db_id != None)
-		#
-
-		return _return
+		return (self.db_id != None)
 	#
 
 	def load_parent(self):
@@ -292,36 +251,26 @@ Load the parent instance.
 		return _return
 	#
 
-	def object_add(self, child):
+	def _reload(self):
 	#
 		"""
-Add the given child.
-
-:param child: DataLinker instance
+Implementation of the reloading SQLAlchemy database instance logic.
 
 :since: v0.1.00
 		"""
 
-		# pylint: disable=protected-access
-
-		if (isinstance(child, DataLinker)):
+		with self._lock:
 		#
-			with self:
+			if ((not hasattr(self.local, "db_instance")) or self.local.db_instance == None):
 			#
-				child_data = child.data_get("id")
-
-				if (child_data['id'] != self.local.db_instance.id):
-				#
-					self.local.db_instance.rel_children.append(child._get_db_instance())
-					child.data_set(id_main = self.local.db_instance.id_main)
-
-					self.data_set(objects = "++")
-				#
+				if (self.db_id == None): raise IOException("Database instance is not reloadable.")
+				else: self.local.db_instance = self._database.query(_DbDataLinker).filter(_DbDataLinker.id == self.db_id).first()
 			#
+			else: Instance._reload(self)
 		#
 	#
 
-	def object_remove(self, child):
+	def remove_entry(self, child):
 	#
 		"""
 Remove the given child.
@@ -338,29 +287,72 @@ Remove the given child.
 			with self:
 			#
 				self.local.db_instance.rel_children.remove(child._get_db_instance())
-				child.data_set(id_main = None)
+				child.set_data_attributes(id_main = None)
 
-				self.data_set(objects = "--")
+				self.set_data_attributes(sub_entries = "--")
 			#
 		#
 	#
 
-	def _reload(self):
+	def set_data_attributes(self, **kwargs):
 	#
 		"""
-Implementation of the reloading SQLAlchemy database instance logic.
+Sets values given as keyword arguments to this method.
 
 :since: v0.1.00
 		"""
 
-		with self.lock:
+		self._ensure_thread_local_instance(_DbDataLinker)
+
+		with self:
 		#
-			if (self.local.db_instance == None):
+			if (self.db_id == None): self.db_id = self.local.db_instance.id
+
+			if ("id_parent" in kwargs): self.local.db_instance.id_parent = kwargs['id_parent']
+			if ("id_main" in kwargs): self.local.db_instance.id_main = kwargs['id_main']
+			if ("id_site" in kwargs): self.local.db_instance.id_site = Binary.utf8(kwargs['id_site'])
+			if ("position" in kwargs): self.local.db_instance.position = kwargs['position']
+
+			if ("sub_entries" in kwargs or "sub_entries_type" in kwargs or "time_sortable" in kwargs or "symbol" in kwargs or "title" in kwargs or "tag" in kwargs or "views_count" in kwargs or "views" in kwargs):
 			#
-				if (self.db_id == None): raise IOException("Database instance is not reloadable.")
-				else: self.local.db_instance = self._database.query(_DbDataLinker).filter(_DbDataLinker.id == self.db_id).first()
+				if (self.local.db_instance.rel_meta == None):
+				#
+					self.local.db_instance.rel_meta = _DbDataLinkerMeta()
+					self.local.db_instance.rel_meta.id = self.local.db_instance.id
+					db_meta_instance = self.local.db_instance.rel_meta
+				#
+				else: db_meta_instance = self.local.db_instance.rel_meta
+
+				if ("sub_entries" in kwargs):
+				#
+					if (kwargs['sub_entries'] == "++"): db_meta_instance.sub_entries = db_meta_instance.sub_entries + 1
+					elif (kwargs['sub_entries'] == "--"):
+					#
+						if (db_meta_instance.sub_entries > 0): db_meta_instance.sub_entries = db_meta_instance.sub_entries - 1
+					#
+					else: db_meta_instance.sub_entries = kwargs['sub_entries']
+				#
+
+				if ("sub_entries_type" in kwargs): db_meta_instance.sub_entries_type = kwargs['sub_entries_type']
+				if ("time_sortable" in kwargs): db_meta_instance.time_sortable = int(kwargs['time_sortable'])
+				if ("symbol" in kwargs): db_meta_instance.symbol = Binary.utf8(kwargs['symbol'])
+				if ("title" in kwargs): db_meta_instance.title = Binary.utf8(kwargs['title'])
+
+				if ("tag" in kwargs and kwargs['tag'] != None and len(kwargs['tag']) > 0):
+				#
+					tag = Binary.utf8(kwargs['tag'])
+
+					if (tag != None and db_meta_instance.tag != tag):
+					#
+						with self._database.no_autoflush: self._validate_unique_tag(tag)
+					#
+
+					db_meta_instance.tag = tag
+				#
+
+				if ("views_count" in kwargs): db_meta_instance.views_count = kwargs['views_count']
+				if ("views" in kwargs): db_meta_instance.views = kwargs['views']
 			#
-			else: Instance._reload(self)
 		#
 	#
 
@@ -374,11 +366,11 @@ Validates the given tag to be unique in the current main context.
 :since: v0.1.00
 		"""
 
-		if (
-			self._database.query(sql_count(_DbDataLinker.id)).join(_DbDataLinkerMeta, (_DbDataLinker.id == _DbDataLinkerMeta.id)).filter(
-				_DbDataLinker.id_main == self.local.db_instance.id_main, _DbDataLinkerMeta.tag == tag
-			).scalar() > 0
-		): raise ValueException("Tag can't be used twice in the same context")
+		if (self._database.query(sql_count(_DbDataLinker.id))
+		    .join(_DbDataLinkerMeta, (_DbDataLinker.id == _DbDataLinkerMeta.id))
+		    .filter(_DbDataLinker.id_main == self.local.db_instance.id_main, _DbDataLinkerMeta.tag == tag)
+		    .scalar() > 0
+		   ): raise ValueException("Tag can't be used twice in the same context")
 	#
 
 	load = Instance._wrap_loader(_DbDataLinker)
@@ -402,7 +394,7 @@ Load DataLinker instance by ID.
 		"""
 
 		with Connection.get_instance() as database: db_instance = database.query(_DbDataLinker).filter(_DbDataLinker.id == _id).first()
-		if (db_instance == None): raise ValueException("DataLinker ID '{0}' is invalid".format(_id))
+		if (db_instance == None): raise NothingMatchedException("DataLinker ID '{0}' is invalid".format(_id))
 
 		return DataLinker(db_instance)
 	#
@@ -422,12 +414,14 @@ Load DataLinker instance by tag.
 
 		with Connection.get_instance() as database:
 		#
-			db_instance = database.query(_DbDataLinker).join(
-				_DbDataLinkerMeta, (_DbDataLinker.id == _DbDataLinkerMeta.id)
-			).filter(_DbDataLinkerMeta.tag == tag, _DbDataLinker.id_main == id_main).first()
+			db_instance = (database.query(_DbDataLinker)
+			               .join(_DbDataLinkerMeta, (_DbDataLinker.id == _DbDataLinkerMeta.id))
+			               .filter(_DbDataLinkerMeta.tag == tag, _DbDataLinker.id_main == id_main)
+			               .first()
+			              )
 		#
 
-		if (db_instance == None): raise ValueException("DataLinker tag '{0}' not found".format(tag))
+		if (db_instance == None): raise NothingMatchedException("DataLinker tag '{0}' not found".format(tag))
 
 		return DataLinker(db_instance)
 	#
