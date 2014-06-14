@@ -36,8 +36,11 @@ http://www.direct-netware.de/redirect.py?licenses;gpl
 ----------------------------------------------------------------------------
 NOTE_END //n"""
 
+from sqlalchemy.sql.expression import asc, or_
 from sqlalchemy.sql.functions import count as sql_count
+from weakref import WeakValueDictionary
 
+from dNG.pas.data.settings import Settings
 from dNG.pas.database.connection import Connection
 from dNG.pas.database.instance import Instance
 from dNG.pas.database.nothing_matched_exception import NothingMatchedException
@@ -46,6 +49,7 @@ from dNG.pas.database.instances.data_linker_meta import DataLinkerMeta as _DbDat
 from dNG.pas.runtime.io_exception import IOException
 from dNG.pas.runtime.value_exception import ValueException
 from .binary import Binary
+from .data_linker_structure import DataLinkerStructure
 
 class DataLinker(Instance):
 #
@@ -65,7 +69,12 @@ This class provides an hierarchical abstraction layer called DataLinker.
 
 	SUB_ENTRIES_TYPE_ADDITIONAL_CONTENT = 1
 	"""
-Sub objects are defined to represent "additional content"
+Sub entries are defined to represent "additional content"
+	"""
+
+	_structure_instance_cache = WeakValueDictionary()
+	"""
+Structure instance cache
 	"""
 
 	def __init__(self, db_instance = None):
@@ -83,6 +92,10 @@ Constructor __init__(DataLinker)
 		self.db_id = None
 		"""
 Database ID used for reloading
+		"""
+		self.structure_instance = None
+		"""
+Structure instance for the main ID of this entry
 		"""
 
 		if (db_instance != None):
@@ -107,9 +120,9 @@ Add the given child.
 		#
 			with self:
 			#
-				child_data = child.get_data_attributes("id")
+				child_id = child.get_id()
 
-				if (child_data['id'] != self.local.db_instance.id):
+				if (child_id != self.local.db_instance.id):
 				#
 					self.local.db_instance.rel_children.append(child._get_db_instance())
 					child.set_data_attributes(id_main = self.local.db_instance.id_main)
@@ -118,6 +131,55 @@ Add the given child.
 				#
 			#
 		#
+	#
+
+	def _apply_structure_join_condition(self, db_query, cache_id):
+	#
+		"""
+Returns the modified SQLAlchemy database query with the "join" condition
+applied.
+
+:param cache_id: ID used for building the structure SQLAlchemy query.
+
+:return: (object) SQLAlchemy database query
+:since:  v0.1.00
+		"""
+
+		return db_query
+	#
+
+	def _apply_structure_order_by_condition(self, db_query, cache_id):
+	#
+		"""
+Returns the modified SQLAlchemy database query with the "order by" condition
+applied.
+
+:param cache_id: ID used for building the structure SQLAlchemy query.
+
+:return: (object) SQLAlchemy database query
+:since:  v0.1.00
+		"""
+
+		return db_query.order_by(asc(_DbDataLinker.position))
+	#
+
+	def _apply_structure_where_condition(self, db_query, cache_id):
+	#
+		"""
+Returns the modified SQLAlchemy database query with the "where" condition
+applied.
+
+:param cache_id: ID used for building the structure SQLAlchemy query.
+
+:return: (object) SQLAlchemy database query
+:since:  v0.1.00
+		"""
+
+		db_query = db_query.filter(_DbDataLinker.id_main == self.local.db_instance.id_main,
+		                           _DbDataLinker.identity == self.local.db_instance.identity
+		                          )
+
+		return DataLinker._db_apply_id_site_condition(db_query)
 	#
 
 	def delete(self):
@@ -177,10 +239,46 @@ Returns the identity of this DataLinker instance.
 :since:  v0.1.00
 	"""
 
+	def _analyze_structure(self, cache_id):
+	#
+		"""
+Returns the structure entries of the main ID of this instance.
+
+:param cache_id: ID used for building the structure SQLAlchemy query and
+                 cache its result.
+
+:since: v0.1.00
+		"""
+
+		structure_instance = DataLinker._structure_instance_cache.get(cache_id)
+
+		if (structure_instance == None):
+		#
+			structure_instance = DataLinkerStructure()
+
+			with self:
+			#
+				db_query = self._database.query(_DbDataLinker)
+				db_query = self._apply_structure_join_condition(db_query, cache_id)
+				db_query = self._apply_structure_where_condition(db_query, cache_id)
+				db_query = self._apply_structure_order_by_condition(db_query, cache_id)
+
+				for entry in DataLinker.iterator(_DbDataLinker, self._database.execute(db_query), DataLinker): structure_instance.add(entry)
+			#
+
+			DataLinker._structure_instance_cache[cache_id] = structure_instance
+		#
+
+		self.structure_instance = structure_instance
+	#
+
 	def get_sub_entries(self, offset = 0, limit = -1):
 	#
 		"""
-Returns the children objects of this instance.
+Returns the child entries of this instance.
+
+:param offset: SQLAlchemy query offset
+:param limit: SQLAlchemy query limit
 
 :return: (list) DataLinker children instances
 :since:  v0.1.00
@@ -189,6 +287,7 @@ Returns the children objects of this instance.
 		with self:
 		#
 			db_query = self.local.db_instance.rel_children
+			db_query = DataLinker._db_apply_id_site_condition(db_query)
 
 			db_query = self._db_apply_sort_definition(db_query)
 			if (offset > 0): db_query = db_query.offset(offset)
@@ -200,16 +299,16 @@ Returns the children objects of this instance.
 
 	get_sub_entries_count = Instance._wrap_getter("sub_entries")
 	"""
-Returns the number of objects of this instance.
+Returns the number of child entries of this instance.
 
-:return: (str) DataLinker ID; None if undefined
+:return: (int) Number of child entries
 :since:  v0.1.00
 	"""
 
 	def _get_unknown_data_attribute(self, attribute):
 	#
 		"""
-Return the data for the requested attribute not defined for this instance.
+Returns the data for the requested attribute not defined for this instance.
 
 :param attribute: Requested attribute
 
@@ -231,6 +330,26 @@ thread.
 		"""
 
 		return (self.db_id != None)
+	#
+
+	def is_tag_unique(self, tag):
+	#
+		"""
+Returns true if the given tag is unique in the current main context.
+
+:return: (bool) True if the Tag to be checked
+:since:  v0.1.00
+		"""
+
+		_return = True
+
+		with self:
+		#
+			try: self._validate_unique_tag(tag)
+			except ValueException: _return = False
+		#
+
+		return _return
 	#
 
 	def load_parent(self):
@@ -373,13 +492,22 @@ Validates the given tag to be unique in the current main context.
 		   ): raise ValueException("Tag can't be used twice in the same context")
 	#
 
-	load = Instance._wrap_loader(_DbDataLinker)
-	"""
-Load DataLinker instance by the given criteria (AND condition is used).
+	@staticmethod
+	def _db_apply_id_site_condition(db_query):
+	#
+		"""
+Returns the modified SQLAlchemy database query with the "where" condition
+for the site ID applied.
 
-:return: (object) DataLinker instance on success
+:return: (object) SQLAlchemy database query
 :since:  v0.1.00
-	"""
+		"""
+
+		id_site = Settings.get("pas_global_datalinker_site_id")
+		if (id_site != None): db_query = db_query.filter(or_(_DbDataLinker.id_site == None, _DbDataLinker.id_site == id_site))
+
+		return db_query
+	#
 
 	@staticmethod
 	def load_id(_id):
@@ -393,9 +521,14 @@ Load DataLinker instance by ID.
 :since:  v0.1.00
 		"""
 
-		with Connection.get_instance() as database: db_instance = database.query(_DbDataLinker).filter(_DbDataLinker.id == _id).first()
-		if (db_instance == None): raise NothingMatchedException("DataLinker ID '{0}' is invalid".format(_id))
+		with Connection.get_instance() as database:
+		#
+			db_query = database.query(_DbDataLinker)
+			db_query = DataLinker._db_apply_id_site_condition(db_query)
+			db_instance = db_query.filter(_DbDataLinker.id == _id).first()
+		#
 
+		if (db_instance == None): raise NothingMatchedException("DataLinker ID '{0}' is invalid".format(_id))
 		return DataLinker(db_instance)
 	#
 
@@ -414,15 +547,18 @@ Load DataLinker instance by tag.
 
 		with Connection.get_instance() as database:
 		#
-			db_instance = (database.query(_DbDataLinker)
-			               .join(_DbDataLinkerMeta, (_DbDataLinker.id == _DbDataLinkerMeta.id))
-			               .filter(_DbDataLinkerMeta.tag == tag, _DbDataLinker.id_main == id_main)
+			db_query = (database.query(_DbDataLinker)
+			            .join(_DbDataLinkerMeta, (_DbDataLinker.id == _DbDataLinkerMeta.id))
+			           )
+
+			db_query = DataLinker._db_apply_id_site_condition(db_query)
+
+			db_instance = (db_query.filter(_DbDataLinkerMeta.tag == tag, _DbDataLinker.id_main == id_main)
 			               .first()
 			              )
 		#
 
 		if (db_instance == None): raise NothingMatchedException("DataLinker tag '{0}' not found".format(tag))
-
 		return DataLinker(db_instance)
 	#
 #

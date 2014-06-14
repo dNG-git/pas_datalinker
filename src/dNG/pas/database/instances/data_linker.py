@@ -36,8 +36,9 @@ http://www.direct-netware.de/redirect.py?licenses;gpl
 ----------------------------------------------------------------------------
 NOTE_END //n"""
 
-from sqlalchemy import BIGINT, Column, ForeignKey, VARCHAR
 from sqlalchemy.orm import backref, foreign, relationship, remote
+from sqlalchemy.schema import Column, ForeignKey
+from sqlalchemy.types import BIGINT, VARCHAR
 from uuid import uuid4 as uuid
 
 from .abstract import Abstract
@@ -123,6 +124,7 @@ Constructor __init__(DataLinker)
 		Abstract.__init__(self, *args, **kwargs)
 
 		if (self.id == None): self.id = uuid().hex
+		if (self.position == None): self.position = 0
 	#
 #
 

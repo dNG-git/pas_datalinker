@@ -36,7 +36,8 @@ http://www.direct-netware.de/redirect.py?licenses;gpl
 ----------------------------------------------------------------------------
 NOTE_END //n"""
 
-from sqlalchemy import BOOLEAN, BIGINT, Column, SMALLINT, VARCHAR
+from sqlalchemy.schema import Column
+from sqlalchemy.types import BOOLEAN, BIGINT, SMALLINT, VARCHAR
 
 from dNG.pas.database.types.date_time import DateTime
 from .abstract import Abstract
@@ -110,6 +111,7 @@ Constructor __init__(DataLinkerMeta)
 		Abstract.__init__(self, *args, **kwargs)
 
 		if (self.sub_entries == None): self.sub_entries = 0
+		if (self.views == None): self.views = 0
 	#
 #
 
