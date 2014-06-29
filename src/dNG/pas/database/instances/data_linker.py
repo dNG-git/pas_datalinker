@@ -2,10 +2,6 @@
 ##j## BOF
 
 """
-dNG.pas.database.instances.DataLinker
-"""
-"""n// NOTE
-----------------------------------------------------------------------------
 direct PAS
 Python Application Services
 ----------------------------------------------------------------------------
@@ -33,8 +29,7 @@ http://www.direct-netware.de/redirect.py?licenses;gpl
 ----------------------------------------------------------------------------
 #echo(pasDataLinkerVersion)#
 #echo(__FILEPATH__)#
-----------------------------------------------------------------------------
-NOTE_END //n"""
+"""
 
 from sqlalchemy.orm import backref, foreign, relationship, remote
 from sqlalchemy.schema import Column, ForeignKey

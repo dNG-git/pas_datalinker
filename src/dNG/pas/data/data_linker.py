@@ -2,10 +2,6 @@
 ##j## BOF
 
 """
-dNG.pas.data.DataLinker
-"""
-"""n// NOTE
-----------------------------------------------------------------------------
 direct PAS
 Python Application Services
 ----------------------------------------------------------------------------
@@ -33,10 +29,10 @@ http://www.direct-netware.de/redirect.py?licenses;gpl
 ----------------------------------------------------------------------------
 #echo(pasDataLinkerVersion)#
 #echo(__FILEPATH__)#
-----------------------------------------------------------------------------
-NOTE_END //n"""
+"""
 
-from sqlalchemy.sql.expression import asc, or_
+from sqlalchemy.sql.expression import func as sql
+from sqlalchemy.sql.expression import or_
 from sqlalchemy.sql.functions import count as sql_count
 from weakref import WeakValueDictionary
 
@@ -44,6 +40,7 @@ from dNG.pas.data.settings import Settings
 from dNG.pas.database.connection import Connection
 from dNG.pas.database.instance import Instance
 from dNG.pas.database.nothing_matched_exception import NothingMatchedException
+from dNG.pas.database.sort_definition import SortDefinition
 from dNG.pas.database.instances.data_linker import DataLinker as _DbDataLinker
 from dNG.pas.database.instances.data_linker_meta import DataLinkerMeta as _DbDataLinkerMeta
 from dNG.pas.runtime.io_exception import IOException
@@ -116,6 +113,8 @@ Add the given child.
 
 		# pylint: disable=protected-access
 
+		if (self.log_handler != None): self.log_handler.debug("#echo(__FILEPATH__)# -{0!r}.add_entry()- (#echo(__LINE__)#)", self, context = "pas_datalinker")
+
 		if (isinstance(child, DataLinker)):
 		#
 			with self:
@@ -133,6 +132,41 @@ Add the given child.
 		#
 	#
 
+	def _analyze_structure(self, cache_id):
+	#
+		"""
+Returns the structure entries of the main ID of this instance.
+
+:param cache_id: ID used for building the structure SQLAlchemy query and
+                 cache its result.
+
+:since: v0.1.00
+		"""
+
+		if (self.log_handler != None): self.log_handler.debug("#echo(__FILEPATH__)# -{0!r}._analyze_structure()- (#echo(__LINE__)#)", self, context = "pas_datalinker")
+
+		structure_instance = DataLinker._structure_instance_cache.get(cache_id)
+
+		if (structure_instance == None):
+		#
+			structure_instance = DataLinkerStructure()
+
+			with self:
+			#
+				db_query = self._database.query(_DbDataLinker)
+				db_query = self._apply_structure_join_condition(db_query, cache_id)
+				db_query = self._apply_structure_where_condition(db_query, cache_id)
+				if (len(self._db_sort_tuples) < 1): db_query = self._apply_structure_order_by_condition(db_query, cache_id)
+
+				for entry in DataLinker.iterator(_DbDataLinker, self._database.execute(db_query), DataLinker): structure_instance.add(entry)
+			#
+
+			DataLinker._structure_instance_cache[cache_id] = structure_instance
+		#
+
+		self.structure_instance = structure_instance
+	#
+
 	def _apply_structure_join_condition(self, db_query, cache_id):
 	#
 		"""
@@ -145,6 +179,7 @@ applied.
 :since:  v0.1.00
 		"""
 
+		if (self.log_handler != None): self.log_handler.debug("#echo(__FILEPATH__)# -{0!r}._apply_structure_join_condition()- (#echo(__LINE__)#)", self, context = "pas_datalinker")
 		return db_query
 	#
 
@@ -160,7 +195,8 @@ applied.
 :since:  v0.1.00
 		"""
 
-		return db_query.order_by(asc(_DbDataLinker.position))
+		if (self.log_handler != None): self.log_handler.debug("#echo(__FILEPATH__)# -{0!r}._apply_structure_order_by_condition()- (#echo(__LINE__)#)", self, context = "pas_datalinker")
+		return self._apply_db_sort_definition(db_query, "DataLinker")
 	#
 
 	def _apply_structure_where_condition(self, db_query, cache_id):
@@ -175,11 +211,45 @@ applied.
 :since:  v0.1.00
 		"""
 
+		if (self.log_handler != None): self.log_handler.debug("#echo(__FILEPATH__)# -{0!r}._apply_structure_where_condition()- (#echo(__LINE__)#)", self, context = "pas_datalinker")
+
 		db_query = db_query.filter(_DbDataLinker.id_main == self.local.db_instance.id_main,
 		                           _DbDataLinker.identity == self.local.db_instance.identity
 		                          )
 
 		return DataLinker._db_apply_id_site_condition(db_query)
+	#
+
+	def _apply_sub_entries_join_condition(self, db_query, context = None):
+	#
+		"""
+Returns the modified SQLAlchemy database query with the "join" condition
+applied.
+
+:param context: Sub entries request context
+
+:return: (object) SQLAlchemy database query
+:since:  v0.1.00
+		"""
+
+		if (self.log_handler != None): self.log_handler.debug("#echo(__FILEPATH__)# -{0!r}._apply_sub_entries_condition()- (#echo(__LINE__)#)", self, context = "pas_datalinker")
+		return db_query.outerjoin(_DbDataLinkerMeta, _DbDataLinker.id == _DbDataLinkerMeta.id)
+	#
+
+	def _apply_sub_entries_order_by_condition(self, db_query, context = None):
+	#
+		"""
+Returns the modified SQLAlchemy database query with the "order by" condition
+applied.
+
+:param context: Sub entries request context
+
+:return: (object) SQLAlchemy database query
+:since:  v0.1.00
+		"""
+
+		if (self.log_handler != None): self.log_handler.debug("#echo(__FILEPATH__)# -{0!r}._apply_sub_entries_order_by_condition()- (#echo(__LINE__)#)", self, context = "pas_datalinker")
+		return self._apply_db_sort_definition(db_query, context)
 	#
 
 	def delete(self):
@@ -191,6 +261,7 @@ Deletes this entry from the database.
 :since:  v0.1.00
 		"""
 
+		if (self.log_handler != None): self.log_handler.debug("#echo(__FILEPATH__)# -{0!r}.delete()- (#echo(__LINE__)#)", self, context = "pas_datalinker")
 		_return = False
 
 		with self:
@@ -239,57 +310,54 @@ Returns the identity of this DataLinker instance.
 :since:  v0.1.00
 	"""
 
-	def _analyze_structure(self, cache_id):
+	def _get_default_sort_definition(self, context = None):
 	#
 		"""
-Returns the structure entries of the main ID of this instance.
+Returns the default sort definition list.
 
-:param cache_id: ID used for building the structure SQLAlchemy query and
-                 cache its result.
+:param context: Sort definition context
 
-:since: v0.1.00
+:return: (list) Sort definition list
+:since:  v0.1.00
 		"""
 
-		structure_instance = DataLinker._structure_instance_cache.get(cache_id)
+		if (self.log_handler != None): self.log_handler.debug("#echo(__FILEPATH__)# -{0!r}._get_default_sort_definition({1})- (#echo(__LINE__)#)", self, context, context = "pas_datalinker")
 
-		if (structure_instance == None):
-		#
-			structure_instance = DataLinkerStructure()
-
-			with self:
-			#
-				db_query = self._database.query(_DbDataLinker)
-				db_query = self._apply_structure_join_condition(db_query, cache_id)
-				db_query = self._apply_structure_where_condition(db_query, cache_id)
-				db_query = self._apply_structure_order_by_condition(db_query, cache_id)
-
-				for entry in DataLinker.iterator(_DbDataLinker, self._database.execute(db_query), DataLinker): structure_instance.add(entry)
-			#
-
-			DataLinker._structure_instance_cache[cache_id] = structure_instance
-		#
-
-		self.structure_instance = structure_instance
+		return ([ ( "position", SortDefinition.ASCENDING ) ]
+		        if (context == "DataLinker") else
+		        [ ( "position", SortDefinition.ASCENDING ), ( "time_sortable", SortDefinition.DESCENDING ) ]
+		       )
 	#
 
-	def get_sub_entries(self, offset = 0, limit = -1):
+	def get_sub_entries(self, offset = 0, limit = -1, identity = None, exclude_identity = None):
 	#
 		"""
 Returns the child entries of this instance.
 
 :param offset: SQLAlchemy query offset
 :param limit: SQLAlchemy query limit
+:param identity: DataLinker children should only be of the given identity
+:param exclude_identity: DataLinker children should not be of the given identity
 
 :return: (list) DataLinker children instances
 :since:  v0.1.00
 		"""
 
+		if (self.log_handler != None): self.log_handler.debug("#echo(__FILEPATH__)# -{0!r}.get_sub_entries({1:d}, {2:d})- (#echo(__LINE__)#)", self, offset, limit, context = "pas_datalinker")
+
+		if (identity != None and exclude_identity != None): raise ValueException("Defining both an identity and to exclude an identity is not supported")
+
 		with self:
 		#
 			db_query = self.local.db_instance.rel_children
+
+			if (identity != None): db_query = db_query.filter(_DbDataLinker.identity == identity)
+			elif (exclude_identity != None): db_query = db_query.filter(_DbDataLinker.identity != exclude_identity)
+
 			db_query = DataLinker._db_apply_id_site_condition(db_query)
 
-			db_query = self._db_apply_sort_definition(db_query)
+			db_query = self._apply_sub_entries_join_condition(db_query, identity)
+			db_query = self._apply_sub_entries_order_by_condition(db_query, identity)
 			if (offset > 0): db_query = db_query.offset(offset)
 			if (limit > 0): db_query = db_query.limit(limit)
 
@@ -297,13 +365,41 @@ Returns the child entries of this instance.
 		#
 	#
 
-	get_sub_entries_count = Instance._wrap_getter("sub_entries")
-	"""
+	def get_sub_entries_count(self, identity = None, exclude_identity = None):
+	#
+		"""
 Returns the number of child entries of this instance.
+
+:param offset: SQLAlchemy query offset
+:param limit: SQLAlchemy query limit
+:param identity: Count only DataLinker children of the given identity
+:param exclude_identity: Count only DataLinker children not be of the given identity
 
 :return: (int) Number of child entries
 :since:  v0.1.00
-	"""
+		"""
+
+		if (self.log_handler != None): self.log_handler.debug("#echo(__FILEPATH__)# -{0!r}.get_sub_entries_count()- (#echo(__LINE__)#)", self, context = "pas_datalinker")
+
+		if (identity == None and exclude_identity == None): _return = self.get_data_attributes("sub_entries")['sub_entries']
+		elif (identity != None and exclude_identity != None): raise ValueException("Defining both an identity and to exclude an identity is not supported")
+		else:
+		#
+			with self:
+			#
+				db_query = self.local.db_instance.rel_children.with_entities(sql.count(_DbDataLinker.id))
+
+				if (identity != None): db_query = db_query.filter(_DbDataLinker.identity == identity)
+				elif (exclude_identity != None): db_query = db_query.filter(_DbDataLinker.identity != exclude_identity)
+
+				db_query = DataLinker._db_apply_id_site_condition(db_query)
+
+				_return = db_query.scalar()
+			#
+		#
+
+		return _return
+	#
 
 	def _get_unknown_data_attribute(self, attribute):
 	#
@@ -317,6 +413,21 @@ Returns the data for the requested attribute not defined for this instance.
 		"""
 
 		return (getattr(self.local.db_instance.rel_meta, attribute) if (self.local.db_instance.rel_meta != None and hasattr(self.local.db_instance.rel_meta, attribute)) else Instance._get_unknown_data_attribute(self, attribute))
+	#
+
+	def _get_unknown_db_column(self, attribute):
+	#
+		"""
+Returns the SQLAlchemy column for the requested attribute not defined for
+this instance main entity.
+
+:param attribute: Requested attribute
+
+:return: (object) SQLAlchemy column
+:since:  v0.1.00
+		"""
+
+		return (getattr(_DbDataLinkerMeta, attribute) if (hasattr(_DbDataLinkerMeta, attribute)) else Instance._get_unknown_db_column(self, attribute))
 	#
 
 	def is_reloadable(self):
@@ -341,6 +452,7 @@ Returns true if the given tag is unique in the current main context.
 :since:  v0.1.00
 		"""
 
+		if (self.log_handler != None): self.log_handler.debug("#echo(__FILEPATH__)# -{0!r}.is_tag_unique()- (#echo(__LINE__)#)", self, context = "pas_datalinker")
 		_return = True
 
 		with self:
@@ -350,6 +462,18 @@ Returns true if the given tag is unique in the current main context.
 		#
 
 		return _return
+	#
+
+	def load_main(self):
+	#
+		"""
+Load the main instance.
+
+:return: (object) Main DataLinker instance
+:since:  v0.1.00
+		"""
+
+		with self: return (None if (self.local.db_instance.rel_main == None) else DataLinker(self.local.db_instance.rel_main))
 	#
 
 	def load_parent(self):
@@ -401,6 +525,8 @@ Remove the given child.
 
 		# pylint: disable=protected-access
 
+		if (self.log_handler != None): self.log_handler.debug("#echo(__FILEPATH__)# -{0!r}.remove_entry()- (#echo(__LINE__)#)", self, context = "pas_datalinker")
+
 		if (isinstance(child, DataLinker)):
 		#
 			with self:
@@ -423,7 +549,7 @@ Sets values given as keyword arguments to this method.
 
 		self._ensure_thread_local_instance(_DbDataLinker)
 
-		with self:
+		with self, self._database.no_autoflush:
 		#
 			if (self.db_id == None): self.db_id = self.local.db_instance.id
 
@@ -460,12 +586,7 @@ Sets values given as keyword arguments to this method.
 				if ("tag" in kwargs and kwargs['tag'] != None and len(kwargs['tag']) > 0):
 				#
 					tag = Binary.utf8(kwargs['tag'])
-
-					if (tag != None and db_meta_instance.tag != tag):
-					#
-						with self._database.no_autoflush: self._validate_unique_tag(tag)
-					#
-
+					if (tag != None and db_meta_instance.tag != tag): self._validate_unique_tag(tag)
 					db_meta_instance.tag = tag
 				#
 
