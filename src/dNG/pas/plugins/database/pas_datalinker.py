@@ -33,8 +33,30 @@ http://www.direct-netware.de/redirect.py?licenses;gpl
 
 # pylint: disable=unused-argument
 
+from dNG.pas.database.schema import Schema
 from dNG.pas.module.named_loader import NamedLoader
 from dNG.pas.plugins.hook import Hook
+
+def after_apply_schema(params, last_return = None):
+#
+	"""
+Called for "dNG.pas.Database.applySchema.after"
+
+:param params: Parameter specified
+:param last_return: The return value from the last hook called.
+
+:return: (mixed) Return value
+:since:  v0.1.00
+	"""
+
+	datalinker_class = NamedLoader.get_class("dNG.pas.database.instances.DataLinker")
+	Schema.apply_version(datalinker_class)
+
+	datalinker_meta_class = NamedLoader.get_class("dNG.pas.database.instances.DataLinkerMeta")
+	Schema.apply_version(datalinker_meta_class)
+
+	return last_return
+#
 
 def load_all(params, last_return = None):
 #
@@ -48,8 +70,8 @@ Load and register all SQLAlchemy objects to generate database tables.
 :since:  v0.1.00
 	"""
 
-	NamedLoader.get_instance("dNG.pas.database.instances.DataLinker")
-	NamedLoader.get_instance("dNG.pas.database.instances.DataLinkerMeta")
+	NamedLoader.get_class("dNG.pas.database.instances.DataLinker")
+	NamedLoader.get_class("dNG.pas.database.instances.DataLinkerMeta")
 
 	return last_return
 #
@@ -62,6 +84,7 @@ Register plugin hooks.
 :since: v0.1.00
 	"""
 
+	Hook.register("dNG.pas.Database.applySchema.after", after_apply_schema)
 	Hook.register("dNG.pas.Database.loadAll", load_all)
 #
 
@@ -73,6 +96,7 @@ Unregister plugin hooks.
 :since: v0.1.00
 	"""
 
+	Hook.unregister("dNG.pas.Database.applySchema.after", after_apply_schema)
 	Hook.unregister("dNG.pas.Database.loadAll", load_all)
 #
 

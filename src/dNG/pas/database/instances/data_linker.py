@@ -63,6 +63,10 @@ SQLAlchemy table name
 	"""
 Encapsulating SQLAlchemy database instance class name
 	"""
+	db_schema_version = 1
+	"""
+Database schema version
+	"""
 
 	id = Column(VARCHAR(32), primary_key = True)
 	"""
@@ -99,7 +103,7 @@ __mapper_args__ class variable.
 	"""
 Relation to DataLinker children (backref is set as "rel_parent")
 	"""
-	rel_main = relationship("DataLinker", primaryjoin = (foreign(id_main) == remote(id)), uselist = False)
+	rel_main = relationship("DataLinker", post_update = True, primaryjoin = (foreign(id_main) == remote(id)), uselist = False)
 	"""
 Relation to DataLinker main entry
 	"""

@@ -646,7 +646,7 @@ Load DataLinker instance by ID.
 		#
 			db_query = database.query(_DbDataLinker)
 			db_query = DataLinker._db_apply_id_site_condition(db_query)
-			db_instance = db_query.filter(_DbDataLinker.id == _id).first()
+			db_instance = db_query.get(_id)
 		#
 
 		if (db_instance == None): raise NothingMatchedException("DataLinker ID '{0}' is invalid".format(_id))

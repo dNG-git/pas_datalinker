@@ -57,6 +57,10 @@ SQLAlchemy database instance for the metadata of a DataLinker entry.
 	"""
 SQLAlchemy table name
 	"""
+	db_schema_version = 1
+	"""
+Database schema version
+	"""
 
 	id = Column(VARCHAR(32), primary_key = True)
 	"""
