@@ -430,6 +430,18 @@ this instance main entity.
 		return (getattr(_DbDataLinkerMeta, attribute) if (hasattr(_DbDataLinkerMeta, attribute)) else Instance._get_unknown_db_column(self, attribute))
 	#
 
+	def is_main_entry(self):
+	#
+		"""
+Returns true if this is the main entry of the current context.
+
+:return: (bool) True if main entry
+:since:  v0.1.00
+		"""
+
+		with self: return (self.local.db_instance.id == self.local.db_instance.id_main)
+	#
+
 	def is_reloadable(self):
 	#
 		"""
