@@ -257,41 +257,18 @@ applied.
 		"""
 Deletes this entry from the database.
 
-:return: (bool) True on success
-:since:  v0.1.00
+:since: v0.1.00
 		"""
 
 		if (self.log_handler != None): self.log_handler.debug("#echo(__FILEPATH__)# -{0!r}.delete()- (#echo(__LINE__)#)", self, context = "pas_datalinker")
-		_return = False
 
 		with self:
 		#
-			self._database.begin()
+			if (self.local.db_instance.rel_parent != None): DataLinker(self.local.db_instance.rel_parent).remove_entry(self)
+			if (self.local.db_instance.rel_meta != None): self._database.delete(self.local.db_instance.rel_meta)
 
-			try:
-			#
-				db_meta_instance = self.local.db_instance.rel_meta
-
-				if (self.local.db_instance.rel_parent != None): DataLinker(self.local.db_instance.rel_parent).remove_entry(self)
-
-				_return = Instance.delete(self)
-
-				if (_return
-				    and db_meta_instance != None
-				    and db_meta_instance.sub_entries < 1
-				   ): self._database.delete(db_meta_instance)
-
-				if (_return): self._database.commit()
-				else: self._database.rollback()
-			#
-			except Exception:
-			#
-				self._database.rollback()
-				raise
-			#
+			Instance.delete(self)
 		#
-
-		return _return
 	#
 
 	get_id = Instance._wrap_getter("id")
@@ -575,7 +552,6 @@ Sets values given as keyword arguments to this method.
 				if (self.local.db_instance.rel_meta == None):
 				#
 					self.local.db_instance.rel_meta = _DbDataLinkerMeta()
-					self.local.db_instance.rel_meta.id = self.local.db_instance.id
 					db_meta_instance = self.local.db_instance.rel_meta
 				#
 				else: db_meta_instance = self.local.db_instance.rel_meta
@@ -654,6 +630,8 @@ Load DataLinker instance by ID.
 :since:  v0.1.00
 		"""
 
+		if (_id == None): raise NothingMatchedException("DataLinker ID is invalid")
+
 		with Connection.get_instance() as database:
 		#
 			db_query = database.query(_DbDataLinker)
@@ -677,6 +655,8 @@ Load DataLinker instance by tag.
 :return: (object) DataLinker instance on success
 :since:  v0.1.00
 		"""
+
+		if (tag == None): raise NothingMatchedException("DataLinker tag is invalid")
 
 		with Connection.get_instance() as database:
 		#

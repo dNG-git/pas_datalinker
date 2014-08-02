@@ -31,7 +31,7 @@ http://www.direct-netware.de/redirect.py?licenses;gpl
 #echo(__FILEPATH__)#
 """
 
-from sqlalchemy.schema import Column
+from sqlalchemy.schema import Column, ForeignKey
 from sqlalchemy.types import BOOLEAN, BIGINT, SMALLINT, VARCHAR
 
 from dNG.pas.database.types.date_time import DateTime
@@ -62,7 +62,7 @@ SQLAlchemy table name
 Database schema version
 	"""
 
-	id = Column(VARCHAR(32), primary_key = True)
+	id = Column(VARCHAR(32), ForeignKey("{0}_datalinker.id".format(Abstract.get_table_prefix())), primary_key = True)
 	"""
 datalinker_meta.id
 	"""
