@@ -41,6 +41,7 @@ from dNG.pas.database.connection import Connection
 from dNG.pas.database.instance import Instance
 from dNG.pas.database.nothing_matched_exception import NothingMatchedException
 from dNG.pas.database.sort_definition import SortDefinition
+from dNG.pas.database.instance_iterator import InstanceIterator
 from dNG.pas.database.instances.data_linker import DataLinker as _DbDataLinker
 from dNG.pas.database.instances.data_linker_meta import DataLinkerMeta as _DbDataLinkerMeta
 from dNG.pas.runtime.io_exception import IOException
@@ -153,12 +154,14 @@ Returns the structure entries of the main ID of this instance.
 
 			with self:
 			#
-				db_query = self._database.query(_DbDataLinker)
+				db_query = self.local.connection.query(_DbDataLinker)
 				db_query = self._apply_structure_join_condition(db_query, cache_id)
 				db_query = self._apply_structure_where_condition(db_query, cache_id)
-				if (len(self._db_sort_tuples) < 1): db_query = self._apply_structure_order_by_condition(db_query, cache_id)
 
-				for entry in DataLinker.iterator(_DbDataLinker, self._database.execute(db_query), DataLinker): structure_instance.add(entry)
+				if (self._db_sort_definition == None): db_query = self._apply_structure_order_by_condition(db_query, cache_id)
+				else: db_query = self._db_sort_definition.apply(db_query)
+
+				for entry in DataLinker.iterator(_DbDataLinker, self.local.connection.execute(db_query), DataLinker): structure_instance.add(entry)
 			#
 
 			DataLinker._structure_instance_cache[cache_id] = structure_instance
@@ -265,7 +268,7 @@ Deletes this entry from the database.
 		with self:
 		#
 			if (self.local.db_instance.rel_parent != None): DataLinker(self.local.db_instance.rel_parent).remove_entry(self)
-			if (self.local.db_instance.rel_meta != None): self._database.delete(self.local.db_instance.rel_meta)
+			if (self.local.db_instance.rel_meta != None): self.local.connection.delete(self.local.db_instance.rel_meta)
 
 			Instance.delete(self)
 		#
@@ -294,16 +297,18 @@ Returns the default sort definition list.
 
 :param context: Sort definition context
 
-:return: (list) Sort definition list
+:return: (object) Sort definition
 :since:  v0.1.00
 		"""
 
 		if (self.log_handler != None): self.log_handler.debug("#echo(__FILEPATH__)# -{0!r}._get_default_sort_definition({1})- (#echo(__LINE__)#)", self, context, context = "pas_datalinker")
 
-		return ([ ( "position", SortDefinition.ASCENDING ) ]
-		        if (context == "DataLinker") else
-		        [ ( "position", SortDefinition.ASCENDING ), ( "time_sortable", SortDefinition.DESCENDING ) ]
-		       )
+		return SortDefinition([ ( "position", SortDefinition.ASCENDING ) ]
+		                      if (context == "DataLinker") else
+		                      [ ( "position", SortDefinition.ASCENDING ),
+		                        ( "time_sortable", SortDefinition.DESCENDING )
+		                      ]
+		                     )
 	#
 
 	def get_sub_entries(self, offset = 0, limit = -1, identity = None, exclude_identity = None):
@@ -338,7 +343,7 @@ Returns the child entries of this instance.
 			if (offset > 0): db_query = db_query.offset(offset)
 			if (limit > 0): db_query = db_query.limit(limit)
 
-			return DataLinker.buffered_iterator(_DbDataLinker, self._database.execute(db_query), DataLinker)
+			return DataLinker.buffered_iterator(_DbDataLinker, self.local.connection.execute(db_query), DataLinker)
 		#
 	#
 
@@ -491,15 +496,12 @@ Implementation of the reloading SQLAlchemy database instance logic.
 :since: v0.1.00
 		"""
 
-		with self._lock:
+		if (self.local.db_instance == None):
 		#
-			if ((not hasattr(self.local, "db_instance")) or self.local.db_instance == None):
-			#
-				if (self.db_id == None): raise IOException("Database instance is not reloadable.")
-				else: self.local.db_instance = self._database.query(_DbDataLinker).filter(_DbDataLinker.id == self.db_id).first()
-			#
-			else: Instance._reload(self)
+			if (self.db_id == None): raise IOException("Database instance is not reloadable.")
+			else: self.local.db_instance = self.local.connection.query(_DbDataLinker).filter(_DbDataLinker.id == self.db_id).first()
 		#
+		else: Instance._reload(self)
 	#
 
 	def remove_entry(self, child):
@@ -528,6 +530,17 @@ Remove the given child.
 		#
 	#
 
+	def set_as_main_entry(self):
+	#
+		"""
+Sets this entry to be main entry of the current context.
+
+:since: v0.1.00
+		"""
+
+		with self: self.local.db_instance.id_main = self.local.db_instance.id
+	#
+
 	def set_data_attributes(self, **kwargs):
 	#
 		"""
@@ -538,7 +551,7 @@ Sets values given as keyword arguments to this method.
 
 		self._ensure_thread_local_instance(_DbDataLinker)
 
-		with self, self._database.no_autoflush:
+		with self, self.local.connection.no_autoflush:
 		#
 			if (self.db_id == None): self.db_id = self.local.db_instance.id
 
@@ -594,7 +607,7 @@ Validates the given tag to be unique in the current main context.
 :since: v0.1.00
 		"""
 
-		if (self._database.query(sql_count(_DbDataLinker.id))
+		if (self.local.connection.query(sql_count(_DbDataLinker.id))
 		    .join(_DbDataLinkerMeta, (_DbDataLinker.id == _DbDataLinkerMeta.id))
 		    .filter(_DbDataLinker.id_main == self.local.db_instance.id_main, _DbDataLinkerMeta.tag == tag)
 		    .scalar() > 0
@@ -619,6 +632,59 @@ for the site ID applied.
 	#
 
 	@staticmethod
+	def get_entries_count_with_condition(condition_definition):
+	#
+		"""
+Returns the count of DataLinker entries based on the given condition
+definition.
+
+:param condition_definition: ConditionDefinition instance
+
+:return: (int) Number of DataLinker entries
+:since:  v0.1.00
+		"""
+
+		with Connection.get_instance() as connection:
+		#
+			db_query = connection.query(sql_count(_DbDataLinker.id))
+			db_query = DataLinker._db_apply_id_site_condition(db_query)
+			db_query = condition_definition.apply(_DbDataLinker, db_query)
+
+			return db_query.scalar()
+		#
+	#
+
+	@staticmethod
+	def load_entries_list_with_condition(condition_definition, offset = 0, limit = -1, sort_definition = None):
+	#
+		"""
+Loads a list of DataLinker instances based on the given condition
+definition.
+
+:param condition_definition: ConditionDefinition instance
+:param offset: SQLAlchemy query offset
+:param limit: SQLAlchemy query limit
+:param sort_definition: SortDefinition instance
+
+:return: (list) List of DataLinker instances on success
+:since:  v0.1.00
+		"""
+
+		with Connection.get_instance() as connection:
+		#
+			db_query = connection.query(sql_count(_DbDataLinker.id))
+			db_query = DataLinker._db_apply_id_site_condition(db_query)
+			db_query = condition_definition.apply(_DbDataLinker, db_query)
+
+			if (sort_definition != None): db_query = sort_definition.apply(_DbDataLinker, db_query)
+			if (offset > 0): db_query = db_query.offset(offset)
+			if (limit > 0): db_query = db_query.limit(limit)
+
+			return InstanceIterator(_DbDataLinker, connection.execute(db_query), True, DataLinker)
+		#
+	#
+
+	@staticmethod
 	def load_id(_id):
 	#
 		"""
@@ -632,9 +698,9 @@ Load DataLinker instance by ID.
 
 		if (_id == None): raise NothingMatchedException("DataLinker ID is invalid")
 
-		with Connection.get_instance() as database:
+		with Connection.get_instance() as connection:
 		#
-			db_query = database.query(_DbDataLinker)
+			db_query = connection.query(_DbDataLinker)
 			db_query = DataLinker._db_apply_id_site_condition(db_query)
 			db_instance = db_query.get(_id)
 		#
@@ -658,9 +724,9 @@ Load DataLinker instance by tag.
 
 		if (tag == None): raise NothingMatchedException("DataLinker tag is invalid")
 
-		with Connection.get_instance() as database:
+		with Connection.get_instance() as connection:
 		#
-			db_query = (database.query(_DbDataLinker)
+			db_query = (connection.query(_DbDataLinker)
 			            .join(_DbDataLinkerMeta, (_DbDataLinker.id == _DbDataLinkerMeta.id))
 			           )
 
