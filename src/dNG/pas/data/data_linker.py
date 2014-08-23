@@ -87,7 +87,7 @@ Constructor __init__(DataLinker)
 
 		Instance.__init__(self, db_instance)
 
-		self.db_id = None
+		self.db_id = (None if (db_instance == None) else self.get_id())
 		"""
 Database ID used for reloading
 		"""
@@ -95,11 +95,6 @@ Database ID used for reloading
 		"""
 Structure instance for the main ID of this entry
 		"""
-
-		if (db_instance != None):
-		#
-			with self: self.db_id = self.local.db_instance.id
-		#
 	#
 
 	def add_entry(self, child):
