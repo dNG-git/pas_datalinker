@@ -456,13 +456,27 @@ Returns true if the given tag is unique in the current main context.
 	def load_main(self):
 	#
 		"""
-Load the main instance.
+Load the main instance. Please note that it could be the same DataLinker
+instance as the current one.
 
-:return: (object) Main DataLinker instance
+:return: (object) Main DataLinker instance; None if no main entry exists
 :since:  v0.1.00
 		"""
 
-		with self: return (None if (self.local.db_instance.rel_main == None) else DataLinker(self.local.db_instance.rel_main))
+		_return = None
+
+		with self:
+		#
+			if (self.local.db_instance.id_main != None):
+			#
+				_return = (self
+				           if (self.local.db_instance.id == self.local.db_instance.id_main) else
+				           DataLinker(self.local.db_instance.rel_main)
+				          )
+			#
+		#
+
+		return _return
 	#
 
 	def load_parent(self):
@@ -470,14 +484,23 @@ Load the main instance.
 		"""
 Load the parent instance.
 
-:return: (object) Parent DataLinker instance
+:return: (object) Parent DataLinker instance; None if no parent exists
 :since:  v0.1.00
 		"""
 
 		with self:
 		#
-			_return = (None if (self.local.db_instance.rel_parent == None) else DataLinker(self.local.db_instance.rel_parent))
-			if (_return == None and self.local.db_instance.rel_main != None): _return = DataLinker(self.local.db_instance.rel_main)
+			_return = (None
+			           if (self.local.db_instance.rel_parent == None
+			               or self.local.db_instance.id == self.local.db_instance.id_parent
+			              ) else
+			           DataLinker(self.local.db_instance.rel_parent)
+			          )
+
+			if (_return == None
+			    and self.local.db_instance.rel_main != None
+			    and self.local.db_instance.id != self.local.db_instance.id_main
+			   ): _return = DataLinker(self.local.db_instance.rel_main)
 		#
 
 		return _return
