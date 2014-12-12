@@ -662,11 +662,27 @@ definition.
 :since:  v0.1.00
 		"""
 
+		return DataLinker._get_entries_count_with_condition(_DbDataLinker, condition_definition)
+	#
+
+	@staticmethod
+	def _get_entries_count_with_condition(entity, condition_definition):
+	#
+		"""
+Returns the count of cls entries based on the given condition definition.
+
+:param entity: SQLAlchemy database entity
+:param condition_definition: ConditionDefinition instance
+
+:return: (int) Number of DataLinker entries
+:since:  v0.1.00
+		"""
+
 		with Connection.get_instance() as connection:
 		#
-			db_query = connection.query(sql_count(_DbDataLinker.id))
+			db_query = connection.query(sql_count(entity.id))
 			db_query = DataLinker._db_apply_id_site_condition(db_query)
-			db_query = condition_definition.apply(_DbDataLinker, db_query)
+			db_query = condition_definition.apply(entity, db_query)
 
 			return db_query.scalar()
 		#
@@ -688,17 +704,37 @@ definition.
 :since:  v0.1.00
 		"""
 
+		return DataLinker._load_entries_list_with_condition(_DbDataLinker, condition_definition, offset, limit, sort_definition)
+	#
+
+	@classmethod
+	def _load_entries_list_with_condition(cls, entity, condition_definition, offset = 0, limit = -1, sort_definition = None):
+	#
+		"""
+Loads a list of cls instances based on the given condition definition.
+
+:param cls: Python class
+:param entity: SQLAlchemy database entity
+:param condition_definition: ConditionDefinition instance
+:param offset: SQLAlchemy query offset
+:param limit: SQLAlchemy query limit
+:param sort_definition: SortDefinition instance
+
+:return: (list) List of DataLinker instances on success
+:since:  v0.1.00
+		"""
+
 		with Connection.get_instance() as connection:
 		#
-			db_query = connection.query(sql_count(_DbDataLinker.id))
+			db_query = connection.query(entity)
 			db_query = DataLinker._db_apply_id_site_condition(db_query)
-			db_query = condition_definition.apply(_DbDataLinker, db_query)
+			db_query = condition_definition.apply(entity, db_query)
 
-			if (sort_definition != None): db_query = sort_definition.apply(_DbDataLinker, db_query)
+			if (sort_definition != None): db_query = sort_definition.apply(entity, db_query)
 			if (offset > 0): db_query = db_query.offset(offset)
 			if (limit > 0): db_query = db_query.limit(limit)
 
-			return InstanceIterator(_DbDataLinker, connection.execute(db_query), True, DataLinker)
+			return InstanceIterator(entity, connection.execute(db_query), True, cls)
 		#
 	#
 
