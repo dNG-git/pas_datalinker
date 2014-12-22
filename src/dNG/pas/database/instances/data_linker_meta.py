@@ -108,9 +108,8 @@ Constructor __init__(DataLinkerMeta)
 		"""
 
 		Abstract.__init__(self, *args, **kwargs)
-
-		if (self.sub_entries == None): self.sub_entries = 0
-		if (self.views == None): self.views = 0
+		if (self.sub_entries is None): self.sub_entries = 0
+		if (self.views is None): self.views = 0
 	#
 #
 

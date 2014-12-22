@@ -116,7 +116,7 @@ Analyzes all entries to build the hierarchical structure.
 		for entry in self.entries:
 		#
 			entry_data = entry.get_data_attributes("id", "id_parent", "id_main")
-			if (structure_main_id == None): structure_main_id = entry_data['id_main']
+			if (structure_main_id is None): structure_main_id = entry_data['id_main']
 
 			entry_id = entry_data['id']
 			entry_parent_id = entry_data['id_parent']
@@ -192,11 +192,11 @@ children dictionaries.
 
 		_return = [ ]
 
-		if (self.structure == None): self._analyze_entries()
+		if (self.structure is None): self._analyze_entries()
 		if (_id not in self.entry_ids): raise ValueException("Given ID is not a child of this structure")
 
 		structure_ids = self.structure_ids.get(_id)
-		if (structure_ids == None): raise ValueException("Given ID is not a valid structure entry")
+		if (structure_ids is None): raise ValueException("Given ID is not a valid structure entry")
 
 		structure_ptr = self.structure
 

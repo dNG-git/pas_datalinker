@@ -87,7 +87,7 @@ Constructor __init__(DataLinker)
 
 		Instance.__init__(self, db_instance)
 
-		self.db_id = (None if (db_instance == None) else self.get_id())
+		self.db_id = (None if (db_instance is None) else self.get_id())
 		"""
 Database ID used for reloading
 		"""
@@ -109,7 +109,7 @@ Add the given child.
 
 		# pylint: disable=protected-access
 
-		if (self.log_handler != None): self.log_handler.debug("#echo(__FILEPATH__)# -{0!r}.add_entry()- (#echo(__LINE__)#)", self, context = "pas_datalinker")
+		if (self.log_handler is not None): self.log_handler.debug("#echo(__FILEPATH__)# -{0!r}.add_entry()- (#echo(__LINE__)#)", self, context = "pas_datalinker")
 
 		if (isinstance(child, DataLinker)):
 		#
@@ -139,11 +139,11 @@ Returns the structure entries of the main ID of this instance.
 :since: v0.1.00
 		"""
 
-		if (self.log_handler != None): self.log_handler.debug("#echo(__FILEPATH__)# -{0!r}._analyze_structure()- (#echo(__LINE__)#)", self, context = "pas_datalinker")
+		if (self.log_handler is not None): self.log_handler.debug("#echo(__FILEPATH__)# -{0!r}._analyze_structure()- (#echo(__LINE__)#)", self, context = "pas_datalinker")
 
 		structure_instance = DataLinker._structure_instance_cache.get(cache_id)
 
-		if (structure_instance == None):
+		if (structure_instance is None):
 		#
 			structure_instance = DataLinkerStructure()
 
@@ -153,10 +153,10 @@ Returns the structure entries of the main ID of this instance.
 				db_query = self._apply_structure_join_condition(db_query, cache_id)
 				db_query = self._apply_structure_where_condition(db_query, cache_id)
 
-				if (self._db_sort_definition == None): db_query = self._apply_structure_order_by_condition(db_query, cache_id)
+				if (self._db_sort_definition is None): db_query = self._apply_structure_order_by_condition(db_query, cache_id)
 				else: db_query = self._db_sort_definition.apply(db_query)
 
-				for entry in DataLinker.iterator(_DbDataLinker, self.local.connection.execute(db_query), DataLinker): structure_instance.add(entry)
+				for entry in DataLinker.iterator(_DbDataLinker, self.local.connection.execute(db_query)): structure_instance.add(entry)
 			#
 
 			DataLinker._structure_instance_cache[cache_id] = structure_instance
@@ -177,7 +177,7 @@ applied.
 :since:  v0.1.00
 		"""
 
-		if (self.log_handler != None): self.log_handler.debug("#echo(__FILEPATH__)# -{0!r}._apply_structure_join_condition()- (#echo(__LINE__)#)", self, context = "pas_datalinker")
+		if (self.log_handler is not None): self.log_handler.debug("#echo(__FILEPATH__)# -{0!r}._apply_structure_join_condition()- (#echo(__LINE__)#)", self, context = "pas_datalinker")
 		return db_query
 	#
 
@@ -193,7 +193,7 @@ applied.
 :since:  v0.1.00
 		"""
 
-		if (self.log_handler != None): self.log_handler.debug("#echo(__FILEPATH__)# -{0!r}._apply_structure_order_by_condition()- (#echo(__LINE__)#)", self, context = "pas_datalinker")
+		if (self.log_handler is not None): self.log_handler.debug("#echo(__FILEPATH__)# -{0!r}._apply_structure_order_by_condition()- (#echo(__LINE__)#)", self, context = "pas_datalinker")
 		return self._apply_db_sort_definition(db_query, "DataLinker")
 	#
 
@@ -209,7 +209,7 @@ applied.
 :since:  v0.1.00
 		"""
 
-		if (self.log_handler != None): self.log_handler.debug("#echo(__FILEPATH__)# -{0!r}._apply_structure_where_condition()- (#echo(__LINE__)#)", self, context = "pas_datalinker")
+		if (self.log_handler is not None): self.log_handler.debug("#echo(__FILEPATH__)# -{0!r}._apply_structure_where_condition()- (#echo(__LINE__)#)", self, context = "pas_datalinker")
 
 		db_query = db_query.filter(_DbDataLinker.id_main == self.local.db_instance.id_main,
 		                           _DbDataLinker.identity == self.local.db_instance.identity
@@ -230,7 +230,7 @@ applied.
 :since:  v0.1.00
 		"""
 
-		if (self.log_handler != None): self.log_handler.debug("#echo(__FILEPATH__)# -{0!r}._apply_sub_entries_condition()- (#echo(__LINE__)#)", self, context = "pas_datalinker")
+		if (self.log_handler is not None): self.log_handler.debug("#echo(__FILEPATH__)# -{0!r}._apply_sub_entries_condition()- (#echo(__LINE__)#)", self, context = "pas_datalinker")
 		return db_query.outerjoin(_DbDataLinkerMeta, _DbDataLinker.id == _DbDataLinkerMeta.id)
 	#
 
@@ -246,7 +246,7 @@ applied.
 :since:  v0.1.00
 		"""
 
-		if (self.log_handler != None): self.log_handler.debug("#echo(__FILEPATH__)# -{0!r}._apply_sub_entries_order_by_condition()- (#echo(__LINE__)#)", self, context = "pas_datalinker")
+		if (self.log_handler is not None): self.log_handler.debug("#echo(__FILEPATH__)# -{0!r}._apply_sub_entries_order_by_condition()- (#echo(__LINE__)#)", self, context = "pas_datalinker")
 		return self._apply_db_sort_definition(db_query, context)
 	#
 
@@ -258,12 +258,12 @@ Deletes this entry from the database.
 :since: v0.1.00
 		"""
 
-		if (self.log_handler != None): self.log_handler.debug("#echo(__FILEPATH__)# -{0!r}.delete()- (#echo(__LINE__)#)", self, context = "pas_datalinker")
+		if (self.log_handler is not None): self.log_handler.debug("#echo(__FILEPATH__)# -{0!r}.delete()- (#echo(__LINE__)#)", self, context = "pas_datalinker")
 
 		with self:
 		#
-			if (self.local.db_instance.rel_parent != None): DataLinker(self.local.db_instance.rel_parent).remove_entry(self)
-			if (self.local.db_instance.rel_meta != None): self.local.connection.delete(self.local.db_instance.rel_meta)
+			if (self.local.db_instance.rel_parent is not None): DataLinker(self.local.db_instance.rel_parent).remove_entry(self)
+			if (self.local.db_instance.rel_meta is not None): self.local.connection.delete(self.local.db_instance.rel_meta)
 
 			Instance.delete(self)
 		#
@@ -296,7 +296,7 @@ Returns the default sort definition list.
 :since:  v0.1.00
 		"""
 
-		if (self.log_handler != None): self.log_handler.debug("#echo(__FILEPATH__)# -{0!r}._get_default_sort_definition({1})- (#echo(__LINE__)#)", self, context, context = "pas_datalinker")
+		if (self.log_handler is not None): self.log_handler.debug("#echo(__FILEPATH__)# -{0!r}._get_default_sort_definition({1})- (#echo(__LINE__)#)", self, context, context = "pas_datalinker")
 
 		return SortDefinition([ ( "position", SortDefinition.ASCENDING ) ]
 		                      if (context == "DataLinker") else
@@ -320,16 +320,16 @@ Returns the child entries of this instance.
 :since:  v0.1.00
 		"""
 
-		if (self.log_handler != None): self.log_handler.debug("#echo(__FILEPATH__)# -{0!r}.get_sub_entries({1:d}, {2:d})- (#echo(__LINE__)#)", self, offset, limit, context = "pas_datalinker")
+		if (self.log_handler is not None): self.log_handler.debug("#echo(__FILEPATH__)# -{0!r}.get_sub_entries({1:d}, {2:d})- (#echo(__LINE__)#)", self, offset, limit, context = "pas_datalinker")
 
-		if (identity != None and exclude_identity != None): raise ValueException("Defining both an identity and to exclude an identity is not supported")
+		if (identity is not None and exclude_identity is not None): raise ValueException("Defining both an identity and to exclude an identity is not supported")
 
 		with self:
 		#
 			db_query = self.local.db_instance.rel_children
 
-			if (identity != None): db_query = db_query.filter(_DbDataLinker.identity == identity)
-			elif (exclude_identity != None): db_query = db_query.filter(_DbDataLinker.identity != exclude_identity)
+			if (identity is not None): db_query = db_query.filter(_DbDataLinker.identity == identity)
+			elif (exclude_identity is not None): db_query = db_query.filter(_DbDataLinker.identity != exclude_identity)
 
 			db_query = DataLinker._db_apply_id_site_condition(db_query)
 
@@ -338,7 +338,7 @@ Returns the child entries of this instance.
 			if (offset > 0): db_query = db_query.offset(offset)
 			if (limit > 0): db_query = db_query.limit(limit)
 
-			return DataLinker.buffered_iterator(_DbDataLinker, self.local.connection.execute(db_query), DataLinker)
+			return DataLinker.buffered_iterator(_DbDataLinker, self.local.connection.execute(db_query))
 		#
 	#
 
@@ -356,18 +356,18 @@ Returns the number of child entries of this instance.
 :since:  v0.1.00
 		"""
 
-		if (self.log_handler != None): self.log_handler.debug("#echo(__FILEPATH__)# -{0!r}.get_sub_entries_count()- (#echo(__LINE__)#)", self, context = "pas_datalinker")
+		if (self.log_handler is not None): self.log_handler.debug("#echo(__FILEPATH__)# -{0!r}.get_sub_entries_count()- (#echo(__LINE__)#)", self, context = "pas_datalinker")
 
-		if (identity == None and exclude_identity == None): _return = self.get_data_attributes("sub_entries")['sub_entries']
-		elif (identity != None and exclude_identity != None): raise ValueException("Defining both an identity and to exclude an identity is not supported")
+		if (identity is None and exclude_identity is None): _return = self.get_data_attributes("sub_entries")['sub_entries']
+		elif (identity is not None and exclude_identity is not None): raise ValueException("Defining both an identity and to exclude an identity is not supported")
 		else:
 		#
 			with self:
 			#
 				db_query = self.local.db_instance.rel_children.with_entities(sql.count(_DbDataLinker.id))
 
-				if (identity != None): db_query = db_query.filter(_DbDataLinker.identity == identity)
-				elif (exclude_identity != None): db_query = db_query.filter(_DbDataLinker.identity != exclude_identity)
+				if (identity is not None): db_query = db_query.filter(_DbDataLinker.identity == identity)
+				elif (exclude_identity is not None): db_query = db_query.filter(_DbDataLinker.identity != exclude_identity)
 
 				db_query = DataLinker._db_apply_id_site_condition(db_query)
 
@@ -389,7 +389,7 @@ Returns the data for the requested attribute not defined for this instance.
 :since:  v0.1.00
 		"""
 
-		return (getattr(self.local.db_instance.rel_meta, attribute) if (self.local.db_instance.rel_meta != None and hasattr(self.local.db_instance.rel_meta, attribute)) else Instance._get_unknown_data_attribute(self, attribute))
+		return (getattr(self.local.db_instance.rel_meta, attribute) if (self.local.db_instance.rel_meta is not None and hasattr(self.local.db_instance.rel_meta, attribute)) else Instance._get_unknown_data_attribute(self, attribute))
 	#
 
 	def _get_unknown_db_column(self, attribute):
@@ -429,7 +429,7 @@ thread.
 :since:  v0.1.00
 		"""
 
-		return (self.db_id != None)
+		return (self.db_id is not None)
 	#
 
 	def is_tag_unique(self, tag):
@@ -441,7 +441,7 @@ Returns true if the given tag is unique in the current main context.
 :since:  v0.1.00
 		"""
 
-		if (self.log_handler != None): self.log_handler.debug("#echo(__FILEPATH__)# -{0!r}.is_tag_unique()- (#echo(__LINE__)#)", self, context = "pas_datalinker")
+		if (self.log_handler is not None): self.log_handler.debug("#echo(__FILEPATH__)# -{0!r}.is_tag_unique()- (#echo(__LINE__)#)", self, context = "pas_datalinker")
 		_return = True
 
 		with self:
@@ -467,7 +467,7 @@ instance as the current one.
 
 		with self:
 		#
-			if (self.local.db_instance.id_main != None):
+			if (self.local.db_instance.id_main is not None):
 			#
 				_return = (self
 				           if (self.local.db_instance.id == self.local.db_instance.id_main) else
@@ -491,14 +491,14 @@ Load the parent instance.
 		with self:
 		#
 			_return = (None
-			           if (self.local.db_instance.rel_parent == None
+			           if (self.local.db_instance.rel_parent is None
 			               or self.local.db_instance.id == self.local.db_instance.id_parent
 			              ) else
 			           DataLinker(self.local.db_instance.rel_parent)
 			          )
 
-			if (_return == None
-			    and self.local.db_instance.rel_main != None
+			if (_return is None
+			    and self.local.db_instance.rel_main is not None
 			    and self.local.db_instance.id != self.local.db_instance.id_main
 			   ): _return = DataLinker(self.local.db_instance.rel_main)
 		#
@@ -514,9 +514,9 @@ Implementation of the reloading SQLAlchemy database instance logic.
 :since: v0.1.00
 		"""
 
-		if (self.local.db_instance == None):
+		if (self.local.db_instance is None):
 		#
-			if (self.db_id == None): raise IOException("Database instance is not reloadable.")
+			if (self.db_id is None): raise IOException("Database instance is not reloadable.")
 			else: self.local.db_instance = self.local.connection.query(_DbDataLinker).filter(_DbDataLinker.id == self.db_id).first()
 		#
 		else: Instance._reload(self)
@@ -534,7 +534,7 @@ Remove the given child.
 
 		# pylint: disable=protected-access
 
-		if (self.log_handler != None): self.log_handler.debug("#echo(__FILEPATH__)# -{0!r}.remove_entry()- (#echo(__LINE__)#)", self, context = "pas_datalinker")
+		if (self.log_handler is not None): self.log_handler.debug("#echo(__FILEPATH__)# -{0!r}.remove_entry()- (#echo(__LINE__)#)", self, context = "pas_datalinker")
 
 		if (isinstance(child, DataLinker)):
 		#
@@ -571,7 +571,7 @@ Sets values given as keyword arguments to this method.
 
 		with self, self.local.connection.no_autoflush:
 		#
-			if (self.db_id == None): self.db_id = self.local.db_instance.id
+			if (self.db_id is None): self.db_id = self.local.db_instance.id
 
 			if ("id_parent" in kwargs): self.local.db_instance.id_parent = kwargs['id_parent']
 			if ("id_main" in kwargs): self.local.db_instance.id_main = kwargs['id_main']
@@ -580,7 +580,7 @@ Sets values given as keyword arguments to this method.
 
 			if ("sub_entries" in kwargs or "sub_entries_type" in kwargs or "time_sortable" in kwargs or "symbol" in kwargs or "title" in kwargs or "tag" in kwargs or "views_count" in kwargs or "views" in kwargs):
 			#
-				if (self.local.db_instance.rel_meta == None):
+				if (self.local.db_instance.rel_meta is None):
 				#
 					self.local.db_instance.rel_meta = _DbDataLinkerMeta()
 					db_meta_instance = self.local.db_instance.rel_meta
@@ -602,10 +602,10 @@ Sets values given as keyword arguments to this method.
 				if ("symbol" in kwargs): db_meta_instance.symbol = Binary.utf8(kwargs['symbol'])
 				if ("title" in kwargs): db_meta_instance.title = Binary.utf8(kwargs['title'])
 
-				if ("tag" in kwargs and kwargs['tag'] != None and len(kwargs['tag']) > 0):
+				if ("tag" in kwargs and kwargs['tag'] is not None and len(kwargs['tag']) > 0):
 				#
 					tag = Binary.utf8(kwargs['tag'])
-					if (tag != None and db_meta_instance.tag != tag): self._validate_unique_tag(tag)
+					if (tag is not None and db_meta_instance.tag != tag): self._validate_unique_tag(tag)
 					db_meta_instance.tag = tag
 				#
 
@@ -644,7 +644,7 @@ for the site ID applied.
 		"""
 
 		id_site = Settings.get("pas_global_datalinker_site_id")
-		if (id_site != None): db_query = db_query.filter(or_(_DbDataLinker.id_site == None, _DbDataLinker.id_site == id_site))
+		if (id_site is not None): db_query = db_query.filter(or_(_DbDataLinker.id_site is None, _DbDataLinker.id_site == id_site))
 
 		return db_query
 	#
@@ -730,7 +730,7 @@ Loads a list of cls instances based on the given condition definition.
 			db_query = DataLinker._db_apply_id_site_condition(db_query)
 			db_query = condition_definition.apply(entity, db_query)
 
-			if (sort_definition != None): db_query = sort_definition.apply(entity, db_query)
+			if (sort_definition is not None): db_query = sort_definition.apply(entity, db_query)
 			if (offset > 0): db_query = db_query.offset(offset)
 			if (limit > 0): db_query = db_query.limit(limit)
 
@@ -750,7 +750,7 @@ Load DataLinker instance by ID.
 :since:  v0.1.00
 		"""
 
-		if (_id == None): raise NothingMatchedException("DataLinker ID is invalid")
+		if (_id is None): raise NothingMatchedException("DataLinker ID is invalid")
 
 		with Connection.get_instance() as connection:
 		#
@@ -759,7 +759,7 @@ Load DataLinker instance by ID.
 			db_instance = db_query.get(_id)
 		#
 
-		if (db_instance == None): raise NothingMatchedException("DataLinker ID '{0}' is invalid".format(_id))
+		if (db_instance is None): raise NothingMatchedException("DataLinker ID '{0}' is invalid".format(_id))
 		return DataLinker(db_instance)
 	#
 
@@ -776,7 +776,7 @@ Load DataLinker instance by tag.
 :since:  v0.1.00
 		"""
 
-		if (tag == None): raise NothingMatchedException("DataLinker tag is invalid")
+		if (tag is None): raise NothingMatchedException("DataLinker tag is invalid")
 
 		with Connection.get_instance() as connection:
 		#
@@ -791,7 +791,7 @@ Load DataLinker instance by tag.
 			              )
 		#
 
-		if (db_instance == None): raise NothingMatchedException("DataLinker tag '{0}' not found".format(tag))
+		if (db_instance is None): raise NothingMatchedException("DataLinker tag '{0}' not found".format(tag))
 		return DataLinker(db_instance)
 	#
 #

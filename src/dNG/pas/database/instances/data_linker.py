@@ -121,9 +121,8 @@ Constructor __init__(DataLinker)
 		"""
 
 		Abstract.__init__(self, *args, **kwargs)
-
-		if (self.id == None): self.id = uuid().hex
-		if (self.position == None): self.position = 0
+		if (self.id is None): self.id = uuid().hex
+		if (self.position is None): self.position = 0
 	#
 #
 
