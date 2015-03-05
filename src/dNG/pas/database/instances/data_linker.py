@@ -124,6 +124,26 @@ Constructor __init__(DataLinker)
 		if (self.id is None): self.id = uuid().hex
 		if (self.position is None): self.position = 0
 	#
+
+	@classmethod
+	def get_unknown_db_column(cls, attribute):
+	#
+		"""
+Returns the SQLAlchemy column for the requested attribute not defined for
+this instance main entity.
+
+:param cls: Python class
+:param attribute: Requested attribute
+
+:return: (object) SQLAlchemy column
+:since:  v0.1.02
+		"""
+
+		return (getattr(DataLinkerMeta, attribute)
+		        if (hasattr(DataLinkerMeta, attribute)) else
+		        Abstract.get_unknown_db_column(cls, attribute)
+		       )
+	#
 #
 
 ##j## EOF

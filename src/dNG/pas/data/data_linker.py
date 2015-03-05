@@ -392,21 +392,6 @@ Returns the data for the requested attribute not defined for this instance.
 		return (getattr(self.local.db_instance.rel_meta, attribute) if (self.local.db_instance.rel_meta is not None and hasattr(self.local.db_instance.rel_meta, attribute)) else Instance._get_unknown_data_attribute(self, attribute))
 	#
 
-	def _get_unknown_db_column(self, attribute):
-	#
-		"""
-Returns the SQLAlchemy column for the requested attribute not defined for
-this instance main entity.
-
-:param attribute: Requested attribute
-
-:return: (object) SQLAlchemy column
-:since:  v0.1.00
-		"""
-
-		return (getattr(_DbDataLinkerMeta, attribute) if (hasattr(_DbDataLinkerMeta, attribute)) else Instance._get_unknown_db_column(self, attribute))
-	#
-
 	def is_main_entry(self):
 	#
 		"""
