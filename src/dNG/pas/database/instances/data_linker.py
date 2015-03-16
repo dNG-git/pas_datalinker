@@ -141,7 +141,7 @@ this instance main entity.
 
 		return (getattr(DataLinkerMeta, attribute)
 		        if (hasattr(DataLinkerMeta, attribute)) else
-		        Abstract.get_unknown_db_column(cls, attribute)
+		        Abstract.get_unknown_db_column(attribute)
 		       )
 	#
 #
