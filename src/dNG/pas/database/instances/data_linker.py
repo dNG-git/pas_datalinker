@@ -107,7 +107,7 @@ Relation to DataLinker children (backref is set as "rel_parent")
 	"""
 Relation to DataLinker main entry
 	"""
-	rel_meta = relationship(DataLinkerMeta, backref = backref("rel_linker"), uselist = False)
+	rel_meta = relationship(DataLinkerMeta, lazy = "joined", uselist = False)
 	"""
 Relation to DataLinkerMeta (backref is set as "rel_linker")
 	"""

@@ -666,6 +666,8 @@ Returns the count of cls entries based on the given condition definition.
 		with Connection.get_instance() as connection:
 		#
 			db_query = connection.query(sql_count(entity.id))
+			db_query = db_query.outerjoin(_DbDataLinkerMeta, _DbDataLinker.id == _DbDataLinkerMeta.id)
+
 			db_query = DataLinker._db_apply_id_site_condition(db_query)
 			db_query = condition_definition.apply(entity, db_query)
 
@@ -712,6 +714,8 @@ Loads a list of cls instances based on the given condition definition.
 		with Connection.get_instance() as connection:
 		#
 			db_query = connection.query(entity)
+			db_query = db_query.outerjoin(_DbDataLinkerMeta, _DbDataLinker.id == _DbDataLinkerMeta.id)
+
 			db_query = DataLinker._db_apply_id_site_condition(db_query)
 			db_query = condition_definition.apply(entity, db_query)
 
