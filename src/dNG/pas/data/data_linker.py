@@ -65,6 +65,10 @@ This class provides an hierarchical abstraction layer called DataLinker.
 
 	# pylint: disable=maybe-no-member
 
+	_DB_INSTANCE_CLASS = _DbDataLinker
+	"""
+SQLAlchemy database instance class to initialize for new instances.
+	"""
 	SUB_ENTRIES_TYPE_ADDITIONAL_CONTENT = 1
 	"""
 Sub entries are defined to represent "additional content"
@@ -552,8 +556,6 @@ Sets values given as keyword arguments to this method.
 :since: v0.1.00
 		"""
 
-		self._ensure_thread_local_instance(_DbDataLinker)
-
 		with self, self.local.connection.no_autoflush:
 		#
 			if (self.db_id is None): self.db_id = self.local.db_instance.id
@@ -727,12 +729,13 @@ Loads a list of cls instances based on the given condition definition.
 		#
 	#
 
-	@staticmethod
-	def load_id(_id):
+	@classmethod
+	def load_id(cls, _id):
 	#
 		"""
 Load DataLinker instance by ID.
 
+:param cls: Expected encapsulating database instance class
 :param _id: DataLinker ID
 
 :return: (object) DataLinker instance on success
@@ -749,15 +752,18 @@ Load DataLinker instance by ID.
 		#
 
 		if (db_instance is None): raise NothingMatchedException("DataLinker ID '{0}' is invalid".format(_id))
+		Instance._ensure_db_class(cls, db_instance)
+
 		return DataLinker(db_instance)
 	#
 
-	@staticmethod
-	def load_tag(tag, id_main):
+	@classmethod
+	def load_tag(cls, tag, id_main):
 	#
 		"""
 Load DataLinker instance by tag.
 
+:param cls: Expected encapsulating database instance class
 :param tag: DataLinker tag
 :param id_main: DataLinker main ID where the unique tag is looked up
 
@@ -781,6 +787,8 @@ Load DataLinker instance by tag.
 		#
 
 		if (db_instance is None): raise NothingMatchedException("DataLinker tag '{0}' not found".format(tag))
+		Instance._ensure_db_class(cls, db_instance)
+
 		return DataLinker(db_instance)
 	#
 #
