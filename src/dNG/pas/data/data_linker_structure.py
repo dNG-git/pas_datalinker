@@ -151,11 +151,27 @@ Analyzes all entries to build the hierarchical structure.
 			#
 				structure_entry = { "entry": entry,
 				                    "entry_id": entry_id,
+				                    "entry_parent_id": entry_parent_id,
 				                    "children": [ ]
 				                  }
 
 				unmatched_entries[entry_id] = structure_entry
-				if (entry_parent_id in unmatched_entries): unmatched_entries[entry_parent_id]['children'].append(structure_entry)
+
+				if (entry_parent_id in unmatched_entries):
+				#
+					unmatched_entries[entry_parent_id]['children'].append(structure_entry)
+				#
+			#
+		#
+
+		for unmatched_id in unmatched_entries:
+		#
+			unmatched_entry = unmatched_entries[unmatched_id]
+
+			if (unmatched_entry['entry_parent_id'] in structure_entries):
+			#
+				structure_entries[unmatched_entry['entry_parent_id']]['children'].append(unmatched_entry)
+				structure_entries[unmatched_entry['entry_id']] = unmatched_entry
 			#
 		#
 
@@ -190,7 +206,7 @@ children dictionaries.
 :since:  v0.1.00
 		"""
 
-		_return = [ ]
+		_return = { }
 
 		if (self.structure is None): self._analyze_entries()
 		if (_id not in self.entry_ids): raise ValueException("Given ID is not a child of this structure")
