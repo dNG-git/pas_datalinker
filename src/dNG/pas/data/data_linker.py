@@ -31,6 +31,7 @@ https://www.direct-netware.de/redirect?licenses;gpl
 #echo(__FILEPATH__)#
 """
 
+from sqlalchemy.inspection import inspect
 from sqlalchemy.sql.expression import func as sql
 from sqlalchemy.sql.expression import or_
 from sqlalchemy.sql.functions import count as sql_count
@@ -99,6 +100,8 @@ Database ID used for reloading
 		"""
 Structure instance for the main ID of this entry
 		"""
+
+		self._ensure_non_expired_db_instance()
 	#
 
 	def add_entry(self, child):
@@ -135,7 +138,7 @@ Add the given child.
 	def _analyze_structure(self, cache_id):
 	#
 		"""
-Returns the structure entries of the main ID of this instance.
+Analyzes the entry structure based on the main ID of this instance.
 
 :param cache_id: ID used for building the structure SQLAlchemy query and
                  cache its result.
@@ -182,7 +185,7 @@ applied.
 		"""
 
 		if (self.log_handler is not None): self.log_handler.debug("#echo(__FILEPATH__)# -{0!r}._apply_structure_join_condition()- (#echo(__LINE__)#)", self, context = "pas_datalinker")
-		return db_query
+		return db_query.outerjoin(_DbDataLinkerMeta, _DbDataLinker.id == _DbDataLinkerMeta.id)
 	#
 
 	def _apply_structure_order_by_condition(self, db_query, cache_id):
@@ -273,6 +276,31 @@ Deletes this entry from the database.
 		#
 	#
 
+	def _ensure_non_expired_db_instance(self):
+	#
+		"""
+Ensures that the encapsulated database instance does not contain expired
+attributes.
+
+:since: v0.1.02
+		"""
+
+		if (self.local.db_instance is not None
+		    and self.__class__._DB_INSTANCE_CLASS is not None
+		   ):
+		#
+			instance_state = inspect(self.local.db_instance)
+
+			if (instance_state.has_identity and len(instance_state.expired_attributes) > 0):
+			#
+				self.local.db_instance = (DataLinker.get_db_class_query(self.__class__)
+				                          .populate_existing()
+				                          .get(instance_state.identity)
+				                         )
+			#
+		#
+	#
+
 	get_id = Instance._wrap_getter("id")
 	"""
 Returns the ID of this instance.
@@ -330,10 +358,23 @@ Returns the child entries of this instance.
 
 		with self:
 		#
+			db_class = _DbDataLinker
 			db_query = self.local.db_instance.rel_children
 
-			if (identity is not None): db_query = db_query.filter(_DbDataLinker.identity == identity)
-			elif (exclude_identity is not None): db_query = db_query.filter(_DbDataLinker.identity != exclude_identity)
+			if (isinstance(identity, _DbDataLinker)):
+			#
+				db_class = identity._DB_INSTANCE_CLASS
+				identity = identity.__name__
+			#
+
+			if (identity is not None):
+			#
+				if (self.local.db_instance.identity == identity): db_class = DataLinker.get_db_class(self.__class__)
+				db_query = db_query.filter(db_class.identity == identity)
+			#
+
+			if (isinstance(exclude_identity, _DbDataLinker)): exclude_identity = exclude_identity.__name__
+			if (exclude_identity is not None): db_query = db_query.filter(db_class.identity != exclude_identity)
 
 			db_query = DataLinker._db_apply_id_site_condition(db_query)
 
@@ -342,7 +383,7 @@ Returns the child entries of this instance.
 			if (offset > 0): db_query = db_query.offset(offset)
 			if (limit > 0): db_query = db_query.limit(limit)
 
-			return DataLinker.buffered_iterator(_DbDataLinker, self.local.connection.execute(db_query))
+			return DataLinker.buffered_iterator(db_class, self.local.connection.execute(db_query))
 		#
 	#
 
@@ -506,7 +547,7 @@ Implementation of the reloading SQLAlchemy database instance logic.
 		if (self.local.db_instance is None):
 		#
 			if (self.db_id is None): raise IOException("Database instance is not reloadable.")
-			else: self.local.db_instance = self.local.connection.query(_DbDataLinker).filter(_DbDataLinker.id == self.db_id).first()
+			else: self.local.db_instance = Instance.get_db_class_query(self.__class__).filter(_DbDataLinker.id == self.db_id).first()
 		#
 		else: Instance._reload(self)
 	#
@@ -636,20 +677,24 @@ for the site ID applied.
 		return db_query
 	#
 
-	@staticmethod
-	def get_entries_count_with_condition(condition_definition):
+	@classmethod
+	def get_entries_count_with_condition(cls, condition_definition):
 	#
 		"""
-Returns the count of DataLinker entries based on the given condition
+Returns the count of database entries based on the given condition
 definition.
 
+:param cls: Python class
 :param condition_definition: ConditionDefinition instance
 
 :return: (int) Number of DataLinker entries
 :since:  v0.1.00
 		"""
 
-		return DataLinker._get_entries_count_with_condition(_DbDataLinker, condition_definition)
+		db_class = DataLinker.get_db_class(cls)
+		if (db_class is None): db_class = _DbDataLinker
+
+		return DataLinker._get_entries_count_with_condition(db_class, condition_definition)
 	#
 
 	@staticmethod
@@ -677,13 +722,13 @@ Returns the count of cls entries based on the given condition definition.
 		#
 	#
 
-	@staticmethod
-	def load_entries_list_with_condition(condition_definition, offset = 0, limit = -1, sort_definition = None):
+	@classmethod
+	def load_entries_list_with_condition(cls, condition_definition, offset = 0, limit = -1, sort_definition = None):
 	#
 		"""
-Loads a list of DataLinker instances based on the given condition
-definition.
+Loads a list of database instances based on the given condition definition.
 
+:param cls: Python class
 :param condition_definition: ConditionDefinition instance
 :param offset: SQLAlchemy query offset
 :param limit: SQLAlchemy query limit
@@ -693,7 +738,10 @@ definition.
 :since:  v0.1.00
 		"""
 
-		return DataLinker._load_entries_list_with_condition(_DbDataLinker, condition_definition, offset, limit, sort_definition)
+		db_class = DataLinker.get_db_class(cls)
+		if (db_class is None): db_class = _DbDataLinker
+
+		return DataLinker._load_entries_list_with_condition(db_class, condition_definition, offset, limit, sort_definition)
 	#
 
 	@classmethod
@@ -744,17 +792,17 @@ Load DataLinker instance by ID.
 
 		if (_id is None): raise NothingMatchedException("DataLinker ID is invalid")
 
-		with Connection.get_instance() as connection:
+		with Connection.get_instance():
 		#
-			db_query = connection.query(_DbDataLinker)
+			db_query = Instance.get_db_class_query(cls)
 			db_query = DataLinker._db_apply_id_site_condition(db_query)
 			db_instance = db_query.get(_id)
+
+			if (db_instance is None): raise NothingMatchedException("DataLinker ID '{0}' is invalid".format(_id))
+			Instance._ensure_db_class(cls, db_instance)
+
+			return DataLinker(db_instance)
 		#
-
-		if (db_instance is None): raise NothingMatchedException("DataLinker ID '{0}' is invalid".format(_id))
-		Instance._ensure_db_class(cls, db_instance)
-
-		return DataLinker(db_instance)
 	#
 
 	@classmethod
@@ -773,9 +821,9 @@ Load DataLinker instance by tag.
 
 		if (tag is None): raise NothingMatchedException("DataLinker tag is invalid")
 
-		with Connection.get_instance() as connection:
+		with Connection.get_instance():
 		#
-			db_query = (connection.query(_DbDataLinker)
+			db_query = (Instance.get_db_class_query(cls)
 			            .join(_DbDataLinkerMeta, (_DbDataLinker.id == _DbDataLinkerMeta.id))
 			           )
 
@@ -784,12 +832,12 @@ Load DataLinker instance by tag.
 			db_instance = (db_query.filter(_DbDataLinkerMeta.tag == tag, _DbDataLinker.id_main == id_main)
 			               .first()
 			              )
+
+			if (db_instance is None): raise NothingMatchedException("DataLinker tag '{0}' not found".format(tag))
+			Instance._ensure_db_class(cls, db_instance)
+
+			return DataLinker(db_instance)
 		#
-
-		if (db_instance is None): raise NothingMatchedException("DataLinker tag '{0}' not found".format(tag))
-		Instance._ensure_db_class(cls, db_instance)
-
-		return DataLinker(db_instance)
 	#
 #
 

@@ -96,7 +96,8 @@ datalinker.position
 
 	__mapper_args__ = { "polymorphic_identity": "DataLinker",
 	                    "_polymorphic_map": AutoloadingPolymorphicMap(),
-	                    "polymorphic_on": identity }
+	                    "polymorphic_on": identity
+	                  }
 	"""
 sqlalchemy.org: Other options are passed to mapper() using the
 __mapper_args__ class variable.
