@@ -170,7 +170,11 @@ Analyzes all entries to build the hierarchical structure.
 
 			if (unmatched_entry['entry_parent_id'] in structure_entries):
 			#
-				structure_entries[unmatched_entry['entry_parent_id']]['children'].append(unmatched_entry)
+				if (unmatched_entry not in structure_entries[unmatched_entry['entry_parent_id']]['children']):
+				#
+					structure_entries[unmatched_entry['entry_parent_id']]['children'].append(unmatched_entry)
+				#
+
 				structure_entries[unmatched_entry['entry_id']] = unmatched_entry
 			#
 		#
