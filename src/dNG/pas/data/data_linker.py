@@ -31,7 +31,6 @@ https://www.direct-netware.de/redirect?licenses;gpl
 #echo(__FILEPATH__)#
 """
 
-from sqlalchemy.inspection import inspect
 from sqlalchemy.sql.expression import func as sql
 from sqlalchemy.sql.expression import or_
 from sqlalchemy.sql.functions import count as sql_count
@@ -100,8 +99,6 @@ Database ID used for reloading
 		"""
 Structure instance for the main ID of this entry
 		"""
-
-		self._ensure_non_expired_db_instance()
 	#
 
 	def add_entry(self, child):
@@ -284,21 +281,6 @@ attributes.
 
 :since: v0.1.02
 		"""
-
-		if (self.local.db_instance is not None
-		    and self.__class__._DB_INSTANCE_CLASS is not None
-		   ):
-		#
-			instance_state = inspect(self.local.db_instance)
-
-			if (instance_state.has_identity and len(instance_state.expired_attributes) > 0):
-			#
-				self.local.db_instance = (DataLinker.get_db_class_query(self.__class__)
-				                          .populate_existing()
-				                          .get(instance_state.identity)
-				                         )
-			#
-		#
 	#
 
 	get_id = Instance._wrap_getter("id")
@@ -330,10 +312,14 @@ Returns the default sort definition list.
 
 		if (self.log_handler is not None): self.log_handler.debug("#echo(__FILEPATH__)# -{0!r}._get_default_sort_definition({1})- (#echo(__LINE__)#)", self, context, context = "pas_datalinker")
 
-		return SortDefinition([ ( "position", SortDefinition.ASCENDING ) ]
+		return SortDefinition([ ( "position", SortDefinition.ASCENDING ),
+		                        ( "title", SortDefinition.ASCENDING ),
+		                        ( "id", SortDefinition.ASCENDING )
+		                      ]
 		                      if (context == "DataLinker") else
 		                      [ ( "position", SortDefinition.ASCENDING ),
-		                        ( "time_sortable", SortDefinition.DESCENDING )
+		                        ( "time_sortable", SortDefinition.DESCENDING ),
+		                        ( "title", SortDefinition.ASCENDING )
 		                      ]
 		                     )
 	#
@@ -383,7 +369,7 @@ Returns the child entries of this instance.
 			if (offset > 0): db_query = db_query.offset(offset)
 			if (limit > 0): db_query = db_query.limit(limit)
 
-			return DataLinker.buffered_iterator(db_class, self.local.connection.execute(db_query))
+			return DataLinker.iterator(db_class, self.local.connection.execute(db_query))
 		#
 	#
 
@@ -769,7 +755,15 @@ Loads a list of cls instances based on the given condition definition.
 			db_query = DataLinker._db_apply_id_site_condition(db_query)
 			db_query = condition_definition.apply(entity, db_query)
 
-			if (sort_definition is not None): db_query = sort_definition.apply(entity, db_query)
+			if (sort_definition is None):
+			#
+				sort_definition = SortDefinition([ ( "position", SortDefinition.ASCENDING ),
+				                                   ( "title", SortDefinition.ASCENDING ),
+				                                   ( "id", SortDefinition.ASCENDING )
+				                                 ])
+			#
+
+			db_query = sort_definition.apply(entity, db_query)
 			if (offset > 0): db_query = db_query.offset(offset)
 			if (limit > 0): db_query = db_query.limit(limit)
 
