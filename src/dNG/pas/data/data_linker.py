@@ -483,7 +483,7 @@ instance as the current one.
 
 		with self:
 		#
-			if (self.local.db_instance.id_main is not None):
+			if (self.local.db_instance.rel_main is not None):
 			#
 				_return = (self
 				           if (self.local.db_instance.id == self.local.db_instance.id_main) else
