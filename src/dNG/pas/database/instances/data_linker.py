@@ -129,12 +129,32 @@ Constructor __init__(DataLinker)
 		if (self.position is None): self.position = 0
 	#
 
-	@classmethod
-	def get_unknown_db_column(cls, attribute):
+	@staticmethod
+	def _get_db_column(cls, attribute):
+	#
+		"""
+Returns the SQLAlchemy column for the requested attribute of the given
+class.
+
+:param cls: Python class
+:param attribute: Requested attribute
+
+:return: (object) SQLAlchemy column
+:since:  v0.1.02
+		"""
+
+		return (DataLinker.id
+		        if (attribute == "id") else
+		        Abstract._get_db_column(cls, attribute)
+		       )
+	#
+
+	@staticmethod
+	def _get_unknown_db_column(cls, attribute):
 	#
 		"""
 Returns the SQLAlchemy column for the requested attribute not defined for
-this instance main entity.
+the given entity class.
 
 :param cls: Python class
 :param attribute: Requested attribute
@@ -145,7 +165,7 @@ this instance main entity.
 
 		return (getattr(DataLinkerMeta, attribute)
 		        if (hasattr(DataLinkerMeta, attribute)) else
-		        Abstract.get_unknown_db_column(attribute)
+		        Abstract._get_unknown_db_column(cls, attribute)
 		       )
 	#
 #
