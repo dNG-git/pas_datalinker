@@ -767,7 +767,7 @@ Loads a list of cls instances based on the given condition definition.
 			if (offset > 0): db_query = db_query.offset(offset)
 			if (limit > 0): db_query = db_query.limit(limit)
 
-			return InstanceIterator(entity, connection.execute(db_query), True, cls)
+			return InstanceIterator(entity, connection.execute(db_query), instance_class = cls)
 		#
 	#
 
