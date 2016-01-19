@@ -420,7 +420,18 @@ Returns the data for the requested attribute not defined for this instance.
 :since:  v0.1.00
 		"""
 
-		return (getattr(self.local.db_instance.rel_meta, attribute) if (self.local.db_instance.rel_meta is not None and hasattr(self.local.db_instance.rel_meta, attribute)) else Instance._get_unknown_data_attribute(self, attribute))
+		_return = None
+
+		if (self.local.db_instance.rel_meta is not None): _return = getattr(self.local.db_instance.rel_meta, attribute, None)
+		elif (attribute == "sub_entries"):
+		#
+			db_query = self.local.db_instance.rel_children.with_entities(sql.count(_DbDataLinker.id))
+			db_query = DataLinker._db_apply_id_site_condition(db_query)
+
+			_return = db_query.scalar()
+		#
+
+		return _return
 	#
 
 	def is_main_entry(self):
