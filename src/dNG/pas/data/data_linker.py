@@ -31,6 +31,8 @@ https://www.direct-netware.de/redirect?licenses;gpl
 #echo(__FILEPATH__)#
 """
 
+from time import time
+
 from sqlalchemy.sql.expression import func as sql
 from sqlalchemy.sql.expression import or_
 from sqlalchemy.sql.functions import count as sql_count
@@ -432,6 +434,25 @@ Returns the data for the requested attribute not defined for this instance.
 		#
 
 		return _return
+	#
+
+	def _insert(self):
+	#
+		"""
+Insert the instance into the database.
+
+:since: v0.1.00
+		"""
+
+		with self.local.connection.no_autoflush:
+		#
+			Instance._insert(self)
+
+			if (self.local.db_instance.rel_meta is not None):
+			#
+				if (self.local.db_instance.rel_meta.time_sortable is None): self.local.db_instance.rel_meta.time_sortable = int(time())
+			#
+		#
 	#
 
 	def is_main_entry(self):
