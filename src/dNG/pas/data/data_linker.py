@@ -565,7 +565,7 @@ Implementation of the reloading SQLAlchemy database instance logic.
 		if (self.local.db_instance is None):
 		#
 			if (self.db_id is None): raise IOException("Database instance is not reloadable.")
-			else: self.local.db_instance = Instance.get_db_class_query(self.__class__).filter(_DbDataLinker.id == self.db_id).first()
+			else: self.local.db_instance = Instance.get_db_class_query(self.__class__).get(self.db_id)
 		#
 		else: Instance._reload(self)
 	#
