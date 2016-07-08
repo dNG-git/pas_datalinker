@@ -36,7 +36,8 @@ from sqlalchemy.schema import Column, ForeignKey
 from sqlalchemy.types import BIGINT, VARCHAR
 from uuid import uuid4 as uuid
 
-from dNG.pas.database.autoloading_polymorphic_map import AutoloadingPolymorphicMap
+from dNG.database.autoloading_polymorphic_map import AutoloadingPolymorphicMap
+
 from .abstract import Abstract
 from .data_linker_meta import DataLinkerMeta
 
@@ -45,11 +46,11 @@ class DataLinker(Abstract):
 	"""
 SQLAlchemy database instance for DataLinker.
 
-:author:     direct Netware Group
+:author:     direct Netware Group et al.
 :copyright:  (C) direct Netware Group - All rights reserved
 :package:    pas
 :subpackage: datalinker
-:since:      v0.1.00
+:since:      v0.2.00
 :license:    https://www.direct-netware.de/redirect?licenses;gpl
              GNU General Public License 2
 	"""
@@ -60,7 +61,7 @@ SQLAlchemy database instance for DataLinker.
 	"""
 SQLAlchemy table name
 	"""
-	db_instance_class = "dNG.pas.data.DataLinker"
+	db_instance_class = "dNG.data.DataLinker"
 	"""
 Encapsulating SQLAlchemy database instance class name
 	"""
@@ -121,10 +122,11 @@ Relation to DataLinkerMeta (backref is set as "rel_linker")
 		"""
 Constructor __init__(DataLinker)
 
-:since: v0.1.00
+:since: v0.2.00
 		"""
 
 		Abstract.__init__(self, *args, **kwargs)
+
 		if (self.id is None): self.id = uuid().hex
 		if (self.position is None): self.position = 0
 	#
@@ -140,7 +142,7 @@ class.
 :param attribute: Requested attribute
 
 :return: (object) SQLAlchemy column
-:since:  v0.1.02
+:since:  v0.2.00
 		"""
 
 		return (DataLinker.id
@@ -160,7 +162,7 @@ the given entity class.
 :param attribute: Requested attribute
 
 :return: (object) SQLAlchemy column
-:since:  v0.1.02
+:since:  v0.2.00
 		"""
 
 		return (getattr(DataLinkerMeta, attribute)

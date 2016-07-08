@@ -33,7 +33,7 @@ https://www.direct-netware.de/redirect?licenses;gpl
 
 from copy import copy
 
-from dNG.pas.runtime.value_exception import ValueException
+from dNG.runtime.value_exception import ValueException
 
 class DataLinkerStructure(object):
 #
@@ -41,11 +41,11 @@ class DataLinkerStructure(object):
 The "DataLinkerStructure" represents a hierarchical structure of DataLinker
 entries.
 
-:author:     direct Netware Group
+:author:     direct Netware Group et al.
 :copyright:  (C) direct Netware Group - All rights reserved
 :package:    pas
 :subpackage: datalinker
-:since:      v0.1.00
+:since:      v0.2.00
 :license:    https://www.direct-netware.de/redirect?licenses;gpl
              GNU General Public License 2
 	"""
@@ -57,7 +57,7 @@ Constructor __init__(DataLinkerStructure)
 
 :param db_instance: Encapsulated SQLAlchemy database instance
 
-:since: v0.1.00
+:since: v0.2.00
 		"""
 
 		self.structure_ids = { }
@@ -85,7 +85,7 @@ Add the given entry to this structure.
 
 :param entry: DataLinker entry
 
-:since: v0.1.00
+:since: v0.2.00
 		"""
 
 		if (not entry.is_data_attribute_none("id", "id_main")):
@@ -104,7 +104,7 @@ Add the given entry to this structure.
 		"""
 Analyzes all entries to build the hierarchical structure.
 
-:since: v0.1.00
+:since: v0.2.00
 		"""
 
 		self.structure = { }
@@ -187,7 +187,7 @@ Analyzes all entries to build the hierarchical structure.
 		"""
 Analyzes all hierarchical structure to build the flat, reversed ID list.
 
-:since: v0.1.00
+:since: v0.2.00
 		"""
 
 		if (len(structure_dict) > 0):
@@ -207,7 +207,7 @@ Returns a hierarchical dict containing the matched entry and a list of
 children dictionaries.
 
 :return: (dict) Hierarchical dict
-:since:  v0.1.00
+:since:  v0.2.00
 		"""
 
 		_return = { }
@@ -251,7 +251,7 @@ children dictionaries.
 Returns a list of the matched entry and its children entries.
 
 :return: (list) List of entries
-:since:  v0.1.00
+:since:  v0.2.00
 		"""
 
 		return self._get_structure_list_walker(self.get_structure(_id))
@@ -263,7 +263,7 @@ Returns a list of the matched entry and its children entries.
 Returns a flat list for the hierarchical dict entry and its children.
 
 :return: (list) List of entries
-:since:  v0.1.00
+:since:  v0.2.00
 		"""
 
 		_return = [ ]

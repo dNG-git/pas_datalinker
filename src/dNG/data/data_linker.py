@@ -38,16 +38,17 @@ from sqlalchemy.sql.expression import or_
 from sqlalchemy.sql.functions import count as sql_count
 from weakref import WeakValueDictionary
 
-from dNG.pas.data.settings import Settings
-from dNG.pas.database.connection import Connection
-from dNG.pas.database.instance import Instance
-from dNG.pas.database.nothing_matched_exception import NothingMatchedException
-from dNG.pas.database.sort_definition import SortDefinition
-from dNG.pas.database.instance_iterator import InstanceIterator
-from dNG.pas.database.instances.data_linker import DataLinker as _DbDataLinker
-from dNG.pas.database.instances.data_linker_meta import DataLinkerMeta as _DbDataLinkerMeta
-from dNG.pas.runtime.io_exception import IOException
-from dNG.pas.runtime.value_exception import ValueException
+from dNG.data.settings import Settings
+from dNG.database.connection import Connection
+from dNG.database.instance import Instance
+from dNG.database.instance_iterator import InstanceIterator
+from dNG.database.instances.data_linker import DataLinker as _DbDataLinker
+from dNG.database.instances.data_linker_meta import DataLinkerMeta as _DbDataLinkerMeta
+from dNG.database.nothing_matched_exception import NothingMatchedException
+from dNG.database.sort_definition import SortDefinition
+from dNG.runtime.io_exception import IOException
+from dNG.runtime.value_exception import ValueException
+
 from .binary import Binary
 from .data_linker_structure import DataLinkerStructure
 
@@ -56,11 +57,11 @@ class DataLinker(Instance):
 	"""
 This class provides an hierarchical abstraction layer called DataLinker.
 
-:author:     direct Netware Group
+:author:     direct Netware Group et al.
 :copyright:  (C) direct Netware Group - All rights reserved
 :package:    pas
 :subpackage: datalinker
-:since:      v0.1.00
+:since:      v0.2.00
 :license:    https://www.direct-netware.de/redirect?licenses;gpl
              GNU General Public License 2
 	"""
@@ -88,7 +89,7 @@ Constructor __init__(DataLinker)
 
 :param db_instance: Encapsulated SQLAlchemy database instance
 
-:since: v0.1.00
+:since: v0.2.00
 		"""
 
 		Instance.__init__(self, db_instance)
@@ -110,7 +111,7 @@ Add the given child.
 
 :param child: DataLinker instance
 
-:since: v0.1.00
+:since: v0.2.00
 		"""
 
 		# pylint: disable=protected-access
@@ -142,7 +143,7 @@ Analyzes the entry structure based on the main ID of this instance.
 :param cache_id: ID used for building the structure SQLAlchemy query and
                  cache its result.
 
-:since: v0.1.00
+:since: v0.2.00
 		"""
 
 		if (self.log_handler is not None): self.log_handler.debug("#echo(__FILEPATH__)# -{0!r}._analyze_structure()- (#echo(__LINE__)#)", self, context = "pas_datalinker")
@@ -180,7 +181,7 @@ applied.
 :param cache_id: ID used for building the structure SQLAlchemy query.
 
 :return: (object) SQLAlchemy database query
-:since:  v0.1.00
+:since:  v0.2.00
 		"""
 
 		if (self.log_handler is not None): self.log_handler.debug("#echo(__FILEPATH__)# -{0!r}._apply_structure_join_condition()- (#echo(__LINE__)#)", self, context = "pas_datalinker")
@@ -196,7 +197,7 @@ applied.
 :param cache_id: ID used for building the structure SQLAlchemy query.
 
 :return: (object) SQLAlchemy database query
-:since:  v0.1.00
+:since:  v0.2.00
 		"""
 
 		if (self.log_handler is not None): self.log_handler.debug("#echo(__FILEPATH__)# -{0!r}._apply_structure_order_by_condition()- (#echo(__LINE__)#)", self, context = "pas_datalinker")
@@ -212,7 +213,7 @@ applied.
 :param cache_id: ID used for building the structure SQLAlchemy query.
 
 :return: (object) SQLAlchemy database query
-:since:  v0.1.00
+:since:  v0.2.00
 		"""
 
 		if (self.log_handler is not None): self.log_handler.debug("#echo(__FILEPATH__)# -{0!r}._apply_structure_where_condition()- (#echo(__LINE__)#)", self, context = "pas_datalinker")
@@ -233,7 +234,7 @@ applied.
 :param context: Sub entries request context
 
 :return: (object) SQLAlchemy database query
-:since:  v0.1.00
+:since:  v0.2.00
 		"""
 
 		if (self.log_handler is not None): self.log_handler.debug("#echo(__FILEPATH__)# -{0!r}._apply_sub_entries_condition()- (#echo(__LINE__)#)", self, context = "pas_datalinker")
@@ -249,7 +250,7 @@ applied.
 :param context: Sub entries request context
 
 :return: (object) SQLAlchemy database query
-:since:  v0.1.00
+:since:  v0.2.00
 		"""
 
 		if (self.log_handler is not None): self.log_handler.debug("#echo(__FILEPATH__)# -{0!r}._apply_sub_entries_order_by_condition()- (#echo(__LINE__)#)", self, context = "pas_datalinker")
@@ -261,7 +262,7 @@ applied.
 		"""
 Deletes this entry from the database.
 
-:since: v0.1.00
+:since: v0.2.00
 		"""
 
 		if (self.log_handler is not None): self.log_handler.debug("#echo(__FILEPATH__)# -{0!r}.delete()- (#echo(__LINE__)#)", self, context = "pas_datalinker")
@@ -275,22 +276,12 @@ Deletes this entry from the database.
 		#
 	#
 
-	def _ensure_non_expired_db_instance(self):
-	#
-		"""
-Ensures that the encapsulated database instance does not contain expired
-attributes.
-
-:since: v0.1.02
-		"""
-	#
-
 	get_id = Instance._wrap_getter("id")
 	"""
 Returns the ID of this instance.
 
 :return: (str) DataLinker ID; None if undefined
-:since:  v0.1.00
+:since:  v0.2.00
 	"""
 
 	get_identity = Instance._wrap_getter("identity")
@@ -298,7 +289,7 @@ Returns the ID of this instance.
 Returns the identity of this DataLinker instance.
 
 :return: (str) DataLinker ID; None if undefined
-:since:  v0.1.00
+:since:  v0.2.00
 	"""
 
 	def _get_default_sort_definition(self, context = None):
@@ -309,7 +300,7 @@ Returns the default sort definition list.
 :param context: Sort definition context
 
 :return: (object) Sort definition
-:since:  v0.1.00
+:since:  v0.2.00
 		"""
 
 		if (self.log_handler is not None): self.log_handler.debug("#echo(__FILEPATH__)# -{0!r}._get_default_sort_definition({1})- (#echo(__LINE__)#)", self, context, context = "pas_datalinker")
@@ -337,7 +328,7 @@ Returns the child entries of this instance.
 :param exclude_identity: DataLinker children should not be of the given identity
 
 :return: (list) DataLinker children instances
-:since:  v0.1.00
+:since:  v0.2.00
 		"""
 
 		if (self.log_handler is not None): self.log_handler.debug("#echo(__FILEPATH__)# -{0!r}.get_sub_entries({1:d}, {2:d})- (#echo(__LINE__)#)", self, offset, limit, context = "pas_datalinker")
@@ -386,7 +377,7 @@ Returns the number of child entries of this instance.
 :param exclude_identity: Count only DataLinker children not be of the given identity
 
 :return: (int) Number of child entries
-:since:  v0.1.00
+:since:  v0.2.00
 		"""
 
 		if (self.log_handler is not None): self.log_handler.debug("#echo(__FILEPATH__)# -{0!r}.get_sub_entries_count()- (#echo(__LINE__)#)", self, context = "pas_datalinker")
@@ -419,7 +410,7 @@ Returns the data for the requested attribute not defined for this instance.
 :param attribute: Requested attribute
 
 :return: (dict) Value for the requested attribute; None if undefined
-:since:  v0.1.00
+:since:  v0.2.00
 		"""
 
 		_return = None
@@ -441,7 +432,7 @@ Returns the data for the requested attribute not defined for this instance.
 		"""
 Insert the instance into the database.
 
-:since: v0.1.00
+:since: v0.2.00
 		"""
 
 		with self.local.connection.no_autoflush:
@@ -461,7 +452,7 @@ Insert the instance into the database.
 Returns true if this is the main entry of the current context.
 
 :return: (bool) True if main entry
-:since:  v0.1.00
+:since:  v0.2.00
 		"""
 
 		with self: return (self.local.db_instance.id == self.local.db_instance.id_main)
@@ -474,7 +465,7 @@ Returns true if the instance can be reloaded automatically in another
 thread.
 
 :return: (bool) True if reloadable
-:since:  v0.1.00
+:since:  v0.2.00
 		"""
 
 		return (self.db_id is not None)
@@ -486,7 +477,7 @@ thread.
 Returns true if the given tag is unique in the current main context.
 
 :return: (bool) True if the Tag to be checked
-:since:  v0.1.00
+:since:  v0.2.00
 		"""
 
 		if (self.log_handler is not None): self.log_handler.debug("#echo(__FILEPATH__)# -{0!r}.is_tag_unique()- (#echo(__LINE__)#)", self, context = "pas_datalinker")
@@ -508,7 +499,7 @@ Load the main instance. Please note that it could be the same DataLinker
 instance as the current one.
 
 :return: (object) Main DataLinker instance; None if no main entry exists
-:since:  v0.1.00
+:since:  v0.2.00
 		"""
 
 		_return = None
@@ -533,7 +524,7 @@ instance as the current one.
 Load the parent instance.
 
 :return: (object) Parent DataLinker instance; None if no parent exists
-:since:  v0.1.00
+:since:  v0.2.00
 		"""
 
 		with self:
@@ -559,7 +550,7 @@ Load the parent instance.
 		"""
 Implementation of the reloading SQLAlchemy database instance logic.
 
-:since: v0.1.00
+:since: v0.2.00
 		"""
 
 		if (self.local.db_instance is None):
@@ -577,7 +568,7 @@ Remove the given child.
 
 :param child: DataLinker instance
 
-:since: v0.1.00
+:since: v0.2.00
 		"""
 
 		# pylint: disable=protected-access
@@ -601,7 +592,7 @@ Remove the given child.
 		"""
 Sets this entry to be main entry of the current context.
 
-:since: v0.1.00
+:since: v0.2.00
 		"""
 
 		with self: self.local.db_instance.id_main = self.local.db_instance.id
@@ -612,7 +603,7 @@ Sets this entry to be main entry of the current context.
 		"""
 Sets values given as keyword arguments to this method.
 
-:since: v0.1.00
+:since: v0.2.00
 		"""
 
 		with self, self.local.connection.no_autoflush:
@@ -668,7 +659,7 @@ Validates the given tag to be unique in the current main context.
 
 :param tag: Tag to be checked
 
-:since: v0.1.00
+:since: v0.2.00
 		"""
 
 		if (self.local.connection.query(sql_count(_DbDataLinker.id))
@@ -686,7 +677,7 @@ Returns the modified SQLAlchemy database query with the "where" condition
 for the site ID applied.
 
 :return: (object) SQLAlchemy database query
-:since:  v0.1.00
+:since:  v0.2.00
 		"""
 
 		id_site = Settings.get("pas_global_datalinker_site_id")
@@ -706,7 +697,7 @@ definition.
 :param condition_definition: ConditionDefinition instance
 
 :return: (int) Number of DataLinker entries
-:since:  v0.1.00
+:since:  v0.2.00
 		"""
 
 		db_class = DataLinker.get_db_class(cls)
@@ -725,7 +716,7 @@ Returns the count of cls entries based on the given condition definition.
 :param condition_definition: ConditionDefinition instance
 
 :return: (int) Number of DataLinker entries
-:since:  v0.1.00
+:since:  v0.2.00
 		"""
 
 		with Connection.get_instance() as connection:
@@ -753,7 +744,7 @@ Loads a list of database instances based on the given condition definition.
 :param sort_definition: SortDefinition instance
 
 :return: (list) List of DataLinker instances on success
-:since:  v0.1.00
+:since:  v0.2.00
 		"""
 
 		db_class = DataLinker.get_db_class(cls)
@@ -776,7 +767,7 @@ Loads a list of cls instances based on the given condition definition.
 :param sort_definition: SortDefinition instance
 
 :return: (list) List of DataLinker instances on success
-:since:  v0.1.00
+:since:  v0.2.00
 		"""
 
 		with Connection.get_instance() as connection:
@@ -813,7 +804,7 @@ Load DataLinker instance by ID.
 :param _id: DataLinker ID
 
 :return: (object) DataLinker instance on success
-:since:  v0.1.00
+:since:  v0.2.00
 		"""
 
 		if (_id is None): raise NothingMatchedException("DataLinker ID is invalid")
@@ -842,7 +833,7 @@ Load DataLinker instance by tag.
 :param id_main: DataLinker main ID where the unique tag is looked up
 
 :return: (object) DataLinker instance on success
-:since:  v0.1.00
+:since:  v0.2.00
 		"""
 
 		if (tag is None): raise NothingMatchedException("DataLinker tag is invalid")
