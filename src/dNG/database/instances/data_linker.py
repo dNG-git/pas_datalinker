@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-##j## BOF
 
 """
 direct PAS
@@ -42,8 +41,7 @@ from .abstract import Abstract
 from .data_linker_meta import DataLinkerMeta
 
 class DataLinker(Abstract):
-#
-	"""
+    """
 SQLAlchemy database instance for DataLinker.
 
 :author:     direct Netware Group et al.
@@ -53,88 +51,86 @@ SQLAlchemy database instance for DataLinker.
 :since:      v0.2.00
 :license:    https://www.direct-netware.de/redirect?licenses;gpl
              GNU General Public License 2
-	"""
+    """
 
-	# pylint: disable=invalid-name
+    # pylint: disable=invalid-name
 
-	__tablename__ = "{0}_datalinker".format(Abstract.get_table_prefix())
-	"""
+    __tablename__ = "{0}_datalinker".format(Abstract.get_table_prefix())
+    """
 SQLAlchemy table name
-	"""
-	db_instance_class = "dNG.data.DataLinker"
-	"""
+    """
+    db_instance_class = "dNG.data.DataLinker"
+    """
 Encapsulating SQLAlchemy database instance class name
-	"""
-	db_schema_version = 1
-	"""
+    """
+    db_schema_version = 1
+    """
 Database schema version
-	"""
+    """
 
-	id = Column(VARCHAR(32), primary_key = True)
-	"""
+    id = Column(VARCHAR(32), primary_key = True)
+    """
 datalinker.id
-	"""
-	id_parent = Column(VARCHAR(32), ForeignKey(id), index = True)
-	"""
+    """
+    id_parent = Column(VARCHAR(32), ForeignKey(id), index = True)
+    """
 datalinker.id_parent
-	"""
-	id_main = Column(VARCHAR(32), index = True)
-	"""
+    """
+    id_main = Column(VARCHAR(32), index = True)
+    """
 datalinker.id_main
-	"""
-	id_site = Column(VARCHAR(20), index = True)
-	"""
+    """
+    id_site = Column(VARCHAR(20), index = True)
+    """
 datalinker.id_site
-	"""
-	identity = Column(VARCHAR(100), index = True, nullable = False)
-	"""
+    """
+    identity = Column(VARCHAR(100), index = True, nullable = False)
+    """
 datalinker.identity
-	"""
-	position = Column(BIGINT, server_default = "0", nullable = False)
-	"""
+    """
+    position = Column(BIGINT, server_default = "0", nullable = False)
+    """
 datalinker.position
-	"""
+    """
 
-	__mapper_args__ = { "polymorphic_identity": "DataLinker",
-	                    "_polymorphic_map": AutoloadingPolymorphicMap(),
-	                    "polymorphic_on": identity
-	                  }
-	"""
+    __mapper_args__ = { "polymorphic_identity": "DataLinker",
+                        "_polymorphic_map": AutoloadingPolymorphicMap(),
+                        "polymorphic_on": identity
+                      }
+    """
 sqlalchemy.org: Other options are passed to mapper() using the
 __mapper_args__ class variable.
-	"""
+    """
 
-	rel_children = relationship("DataLinker", backref = backref("rel_parent", remote_side = [ id ]), lazy = "dynamic")
-	"""
+    rel_children = relationship("DataLinker", backref = backref("rel_parent", remote_side = [ id ]), lazy = "dynamic")
+    """
 Relation to DataLinker children (backref is set as "rel_parent")
-	"""
-	rel_main = relationship("DataLinker", post_update = True, primaryjoin = (foreign(id_main) == remote(id)), uselist = False)
-	"""
+    """
+    rel_main = relationship("DataLinker", post_update = True, primaryjoin = (foreign(id_main) == remote(id)), uselist = False)
+    """
 Relation to DataLinker main entry
-	"""
-	rel_meta = relationship(DataLinkerMeta, lazy = "joined", uselist = False)
-	"""
+    """
+    rel_meta = relationship(DataLinkerMeta, lazy = "joined", uselist = False)
+    """
 Relation to DataLinkerMeta (backref is set as "rel_linker")
-	"""
+    """
 
-	def __init__(self, *args, **kwargs):
-	#
-		"""
+    def __init__(self, *args, **kwargs):
+        """
 Constructor __init__(DataLinker)
 
 :since: v0.2.00
-		"""
+        """
 
-		Abstract.__init__(self, *args, **kwargs)
+        Abstract.__init__(self, *args, **kwargs)
 
-		if (self.id is None): self.id = uuid().hex
-		if (self.position is None): self.position = 0
-	#
+        if (self.id is None): self.id = uuid().hex
+        if (self.position is None): self.position = 0
+    #
 
-	@staticmethod
-	def _get_db_column(cls, attribute):
-	#
-		"""
+    @staticmethod
+    def _get_db_column(cls, attribute):
+        """
 Returns the SQLAlchemy column for the requested attribute of the given
 class.
 
@@ -143,18 +139,17 @@ class.
 
 :return: (object) SQLAlchemy column
 :since:  v0.2.00
-		"""
+        """
 
-		return (DataLinker.id
-		        if (attribute == "id") else
-		        Abstract._get_db_column(cls, attribute)
-		       )
-	#
+        return (DataLinker.id
+                if (attribute == "id") else
+                Abstract._get_db_column(cls, attribute)
+               )
+    #
 
-	@staticmethod
-	def _get_unknown_db_column(cls, attribute):
-	#
-		"""
+    @staticmethod
+    def _get_unknown_db_column(cls, attribute):
+        """
 Returns the SQLAlchemy column for the requested attribute not defined for
 the given entity class.
 
@@ -163,13 +158,11 @@ the given entity class.
 
 :return: (object) SQLAlchemy column
 :since:  v0.2.00
-		"""
+        """
 
-		return (getattr(DataLinkerMeta, attribute)
-		        if (hasattr(DataLinkerMeta, attribute)) else
-		        Abstract._get_unknown_db_column(cls, attribute)
-		       )
-	#
+        return (getattr(DataLinkerMeta, attribute)
+                if (hasattr(DataLinkerMeta, attribute)) else
+                Abstract._get_unknown_db_column(cls, attribute)
+               )
+    #
 #
-
-##j## EOF

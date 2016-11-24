@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-##j## BOF
 
 """
 direct PAS
@@ -39,8 +38,7 @@ from dNG.database.types.date_time import DateTime
 from .abstract import Abstract
 
 class DataLinkerMeta(Abstract):
-#
-	"""
+    """
 SQLAlchemy database instance for the metadata of a DataLinker entry.
 
 :author:     direct Netware Group et al.
@@ -50,68 +48,65 @@ SQLAlchemy database instance for the metadata of a DataLinker entry.
 :since:      v0.2.00
 :license:    https://www.direct-netware.de/redirect?licenses;gpl
              GNU General Public License 2
-	"""
+    """
 
-	# pylint: disable=invalid-name
+    # pylint: disable=invalid-name
 
-	__tablename__ = "{0}_datalinker_meta".format(Abstract.get_table_prefix())
-	"""
+    __tablename__ = "{0}_datalinker_meta".format(Abstract.get_table_prefix())
+    """
 SQLAlchemy table name
-	"""
-	db_schema_version = 1
-	"""
+    """
+    db_schema_version = 1
+    """
 Database schema version
-	"""
+    """
 
-	id = Column(VARCHAR(32), ForeignKey("{0}_datalinker.id".format(Abstract.get_table_prefix())), primary_key = True)
-	"""
+    id = Column(VARCHAR(32), ForeignKey("{0}_datalinker.id".format(Abstract.get_table_prefix())), primary_key = True)
+    """
 datalinker_meta.id
-	"""
-	sub_entries = Column(BIGINT, server_default = "0", nullable = False)
-	"""
+    """
+    sub_entries = Column(BIGINT, server_default = "0", nullable = False)
+    """
 datalinker_meta.sub_entries
-	"""
-	sub_entries_type = Column(SMALLINT, server_default = "0", nullable = False)
-	"""
+    """
+    sub_entries_type = Column(SMALLINT, server_default = "0", nullable = False)
+    """
 datalinker_meta.sub_entries_type
-	"""
-	time_sortable = Column(DateTime, default = 0, index = True, nullable = False)
-	"""
+    """
+    time_sortable = Column(DateTime, default = 0, index = True, nullable = False)
+    """
 datalinker_meta.time_sortable
-	"""
-	symbol = Column(VARCHAR(255), server_default = "", nullable = False)
-	"""
+    """
+    symbol = Column(VARCHAR(255), server_default = "", nullable = False)
+    """
 datalinker_meta.symbol
-	"""
-	title = Column(VARCHAR(255), server_default = "", index = True, nullable = False)
-	"""
+    """
+    title = Column(VARCHAR(255), server_default = "", index = True, nullable = False)
+    """
 datalinker_meta.title
-	"""
-	tag = Column(VARCHAR(255), server_default = "", index = True, nullable = False)
-	"""
+    """
+    tag = Column(VARCHAR(255), server_default = "", index = True, nullable = False)
+    """
 datalinker_meta.tag
-	"""
-	views_count = Column(BOOLEAN, server_default = "0", nullable = False)
-	"""
+    """
+    views_count = Column(BOOLEAN, server_default = "0", nullable = False)
+    """
 datalinker_meta.views_count
-	"""
-	views = Column(BIGINT, server_default = "0", index = True, nullable = False)
-	"""
+    """
+    views = Column(BIGINT, server_default = "0", index = True, nullable = False)
+    """
 datalinker_meta.views
-	"""
+    """
 
-	def __init__(self, *args, **kwargs):
-	#
-		"""
+    def __init__(self, *args, **kwargs):
+        """
 Constructor __init__(DataLinkerMeta)
 
 :since: v0.2.00
-		"""
+        """
 
-		Abstract.__init__(self, *args, **kwargs)
-		if (self.sub_entries is None): self.sub_entries = 0
-		if (self.views is None): self.views = 0
-	#
+        Abstract.__init__(self, *args, **kwargs)
+        if (self.sub_entries is None): self.sub_entries = 0
+        if (self.views is None): self.views = 0
+    #
 #
-
-##j## EOF
